@@ -7,6 +7,10 @@ data class UnaryOperationExpression(
     val expression: Expression,
     val operator: TokenType
 ): Expression() {
+    init {
+        this.addParentTo(this.expression)
+    }
+
     override fun <R> visit(visitor: ExpressionVisitor<R>): R {
         return visitor.visit(this)
     }

@@ -101,12 +101,14 @@ class Lexer(
                 }
             }
 
-            val final = Token(
-                token.type,
-                token.content,
-                TokenPosition(oldLine, oldColumn)
-            )
-            tokens.add(final)
+            if (token.type !== TokenType.WHITESPACE && token.type !== TokenType.COMMENT) {
+                val final = Token(
+                    token.type,
+                    token.content,
+                    TokenPosition(oldLine, oldColumn)
+                )
+                tokens.add(final)
+            }
 
             input = input.substring(token.length)
             offset += token.length

@@ -8,6 +8,12 @@ data class IfStatement(
     val ifStatements: List<Statement>,
     val elseStatements: List<Statement>
 ): Statement() {
+    init {
+        this.addParentTo(this.condition)
+        this.addParentTo(this.ifStatements)
+        this.addParentTo(this.elseStatements)
+    }
+
     override fun <R> visit(visitor: StatementVisitor<R>): R {
         return visitor.visit(this)
     }

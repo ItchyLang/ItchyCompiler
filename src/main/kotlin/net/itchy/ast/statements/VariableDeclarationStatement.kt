@@ -1,14 +1,16 @@
 package net.itchy.ast.statements
 
 import net.itchy.ast.StatementVisitor
+import net.itchy.ast.data.ItchyType
 import net.itchy.ast.expressions.Expression
 
-data class LoopUntilStatement(
-    val condition: Expression,
-    val statements: List<Statement>
+data class VariableDeclarationStatement(
+    val name: String,
+    val type: ItchyType,
+    val expression: Expression?
 ): Statement() {
     init {
-        this.addParentTo(this.statements)
+        this.expression?.let { this.addParentTo(it) }
     }
 
     override fun <R> visit(visitor: StatementVisitor<R>): R {

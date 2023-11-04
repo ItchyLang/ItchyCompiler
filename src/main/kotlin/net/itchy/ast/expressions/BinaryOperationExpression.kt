@@ -8,6 +8,11 @@ data class BinaryOperationExpression(
     val right: Expression,
     val operator: TokenType
 ): Expression() {
+    init {
+        this.addParentTo(this.left)
+        this.addParentTo(this.right)
+    }
+
     override fun <R> visit(visitor: ExpressionVisitor<R>): R {
         return visitor.visit(this)
     }

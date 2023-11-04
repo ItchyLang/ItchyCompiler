@@ -15,5 +15,9 @@ interface StatementVisitor<R> {
 
     fun visit(statement: LoopUntilStatement): R
 
+    fun visit(statement: SpriteStatement): R
+
+    fun visit(statement: VariableDeclarationStatement): R
+
     fun visit(statement: WhenStatement): R
 }

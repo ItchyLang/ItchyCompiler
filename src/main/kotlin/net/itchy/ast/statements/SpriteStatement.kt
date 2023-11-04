@@ -1,10 +1,9 @@
 package net.itchy.ast.statements
 
 import net.itchy.ast.StatementVisitor
-import net.itchy.ast.expressions.Expression
 
-data class LoopUntilStatement(
-    val condition: Expression,
+data class SpriteStatement(
+    val name: String,
     val statements: List<Statement>
 ): Statement() {
     init {
