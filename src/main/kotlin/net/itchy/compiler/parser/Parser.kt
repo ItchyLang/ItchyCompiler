@@ -241,7 +241,7 @@ class Parser(tokens: List<Token>) {
     private fun multiplicative(): Expression {
         var left = unary()
         while (true) {
-            val current = this.reader.match(MULTIPLY, DIVIDE)
+            val current = this.reader.match(MULTIPLY, DIVIDE, MODULUS)
             current?.let {
                 val right = unary()
                 left = BinaryOperationExpression(left, right, it.type)
