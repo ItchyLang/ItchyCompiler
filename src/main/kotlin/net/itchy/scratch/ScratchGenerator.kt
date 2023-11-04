@@ -196,11 +196,4 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
         }
         this.lastBlock = block
     }
-
-    private fun setVariable() {
-        Block(
-            "data_setvariableto",
-
-        )
-    }
 }

@@ -33,13 +33,24 @@ fun main() {
     val whenFlagID = UUID.randomUUID().toString()
     val setVarID = UUID.randomUUID().toString()
 
-    val whenFlagBlock = Block("event_whenflagclicked", setVarID)
+    val whenFlagBlock = Block(
+        id = whenFlagID,
+        opcode = "event_whenflagclicked",
+        next = setVarID
+    )
 
     val setVarInput = Input(1, Either.right(InputSpec(10, VariantValue("17"), null)), null)
     val setVarField = Field(VariantValue("mattyVar"), mattyVarID)
 
-    val setVarBlock = Block("data_setvariableto", null, whenFlagID, false, hashMapOf("VALUE" to setVarInput),
-        hashMapOf("VARIABLE" to setVarField))
+    val setVarBlock = Block(
+        id = setVarID,
+        opcode = "data_setvariableto",
+        next = null,
+        parent = whenFlagID,
+        topLevel = false,
+        inputs = hashMapOf("VALUE" to setVarInput),
+        fields = hashMapOf("VARIABLE" to setVarField)
+    )
 
     val stage = Stage(arrayListOf(backdrop), hashMapOf(mattyVarID to mattyVar),
         hashMapOf(whenFlagID to whenFlagBlock, setVarID to setVarBlock))

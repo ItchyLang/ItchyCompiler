@@ -2,6 +2,7 @@ package net.itchy.scratch.representation
 
 data class Block
 (
+    @Transient val id : String,
     val opcode : String,
     var next : String? = null,
     var parent : String? = null,
