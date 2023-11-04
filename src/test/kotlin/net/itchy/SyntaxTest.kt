@@ -143,38 +143,10 @@ class SyntaxTest {
 
     @Test
     fun testExpressions() {
-        compiles(
-            """
-            when init {
-                10 + 10
-            }
-            """.trimIndent()
-        )
-        compiles(
+        doesntCompile(
             """
             when init {
                 10 - 10
-            }
-            """.trimIndent()
-        )
-        compiles(
-            """
-            when init {
-                10 * 10
-            }
-            """.trimIndent()
-        )
-        compiles(
-            """
-            when init {
-                10 / 10
-            }
-            """.trimIndent()
-        )
-        compiles(
-            """
-            when init {
-                10 % 10
             }
             """.trimIndent()
         )

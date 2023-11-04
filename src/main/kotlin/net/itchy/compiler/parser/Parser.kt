@@ -17,20 +17,20 @@ class Parser(tokens: List<Token>) {
         val statements = ArrayList<Statement>()
 
         while (!this.reader.isAtEnd()) {
-            statements.add(this.globalDeclaration())
+            statements.addAll(this.globalDeclaration())
         }
 
         return statements
     }
 
-    private fun globalDeclaration(): Statement {
-        return if (this.reader.isType(SPRITE)) this.spriteDeclaration() else this.declaration()
+    private fun globalDeclaration(): List<Statement> {
+        return if (this.reader.isType(SPRITE)) listOf(this.spriteDeclaration()) else this.declaration()
     }
 
-    private fun declaration(): Statement {
+    private fun declaration(): List<Statement> {
         return when (this.reader.type()) {
-            WHEN -> this.whenDeclaration()
-            FUNC, FAST -> this.functionDeclaration()
+            WHEN -> listOf(this.whenDeclaration())
+            FUNC, FAST -> listOf(this.functionDeclaration())
             LET -> this.letDeclaration()
             else -> throw CompileException(this.reader.position())
         }
@@ -44,7 +44,7 @@ class Parser(tokens: List<Token>) {
         val spriteStatements = ArrayList<Statement>()
 
         while (!this.reader.isMatch(RIGHT_CURLY_BRACKET)) {
-            spriteStatements.add(this.declaration())
+            spriteStatements.addAll(this.declaration())
         }
 
         return SpriteStatement(id.content, spriteStatements)
@@ -83,14 +83,20 @@ class Parser(tokens: List<Token>) {
         return FunctionStatement(id.content, fast, type, parameters, this.statements())
     }
 
-    private fun letDeclaration(): VariableDeclarationStatement {
+    private fun letDeclaration(): List<Statement> {
         this.reader.mustMatch(LET)
         val id = this.reader.mustMatch(IDENTIFIER)
         this.reader.mustMatch(COLON)
         val type = this.identifierToType(this.reader.mustMatch(IDENTIFIER))
 
-        val expression = if (this.reader.isMatch(ASSIGN)) this.expression() else null
-        return VariableDeclarationStatement(id.content, type, expression)
+        val statements = ArrayList<Statement>()
+        statements.add(VariableDeclarationStatement(id.content, type))
+
+        if (this.reader.isMatch(ASSIGN)) {
+            statements.add(VariableAssignStatement(id.content, this.expression()))
+        }
+
+        return statements
     }
 
     private fun statements(): List<Statement> {
@@ -101,10 +107,10 @@ class Parser(tokens: List<Token>) {
         }
 
         val statements = ArrayList<Statement>()
-        statements.add(this.statement())
+        statements.addAll(this.statement())
         while (!this.reader.isMatch(RIGHT_CURLY_BRACKET)) {
             this.reader.mustPreviouslyMatch(NEW_LINE)
-            statements.add(this.statement())
+            statements.addAll(this.statement())
         }
 
         for (i in 0..< statements.size - 1) {
@@ -117,12 +123,12 @@ class Parser(tokens: List<Token>) {
         return statements
     }
 
-    private fun statement(): Statement {
+    private fun statement(): List<Statement> {
         return when (this.reader.type()) {
             LET -> this.letDeclaration()
-            IF -> this.ifStatement()
-            LOOP -> this.loopStatement()
-            else -> this.expressionStatement()
+            IF -> listOf(this.ifStatement())
+            LOOP -> listOf(this.loopStatement())
+            else -> listOf(this.expressionStatement())
         }
     }
 

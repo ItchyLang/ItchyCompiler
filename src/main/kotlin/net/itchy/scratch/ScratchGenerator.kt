@@ -15,7 +15,10 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
     val scratchProject = ScratchProject()
 
     val stage = Stage()
-    var sprite: Sprite? = null
+    var currentSprite: Sprite? = null
+
+    var lastBlock: Block? = null
+
 
     init {
 
@@ -38,6 +41,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
             else -> TODO()
         }
         val block = Block(
+            id = expression.id,
             opcode = opcode,
             parent = expression.parent.id,
             next = null,
@@ -47,10 +51,10 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
                 "${parameterName}2" to left
             )
         )
-        this.addBlockToCurrentTarget(block, expression.id)
+        this.addBlockToCurrentTarget(block)
         return Input(
             3,
-            Either.left(expression.id),
+            Either.left(block.id),
             Either.right(InputSpec(4, VariantValue(0.0)))
         )
     }
@@ -90,10 +94,10 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
     override fun visit(statement: FunctionCallStatement): Block {
         val expression = statement.expression
         if (expression.name == "say") {
-            Block(
-                opcode = "looks_say",
-                next =
-            )
+            // Block(
+            //     opcode = "looks_say",
+            //     next =
+            // )
         }
 
         TODO("Not yet implemented")
@@ -124,13 +128,13 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
             name = statement.name,
         )
         this.scratchProject.targets.add(sprite)
-        this.sprite = sprite
+        this.currentSprite = sprite
 
         for (child in statement.statements) {
             child.visit(this)
         }
 
-        this.sprite = null
+        this.currentSprite = null
         // THIS IS JANK!!!
         return null
     }
@@ -145,39 +149,52 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
         val variable = Variable(statement.name, VariantValue(0.0))
         val variableId = UUID.randomUUID().toString()
 
-        val current = this.sprite
+        val current = this.currentSprite
         if (current == null) {
             // We are in the global scope (stage)
             this.stage.variables[variableId] = variable
         }
 
-
+        TODO()
     }
 
-    override fun visit(whenStatement: WhenStatement): Block {
+    override fun visit(whenStatement: WhenStatement): Block? {
         if (whenStatement.statements.isEmpty()) {
-            return
+            TODO()
         }
 
         val first = whenStatement.statements[0]
         if (whenStatement.event == "init") {
             val whenBlock = Block(
+                id = whenStatement.id,
                 opcode = "event_whenflagclicked",
                 next = first.id,
                 parent = null,
                 topLevel = true,
             )
-            this.addBlockToCurrentTarget(whenBlock, whenStatement.id)
+            this.addBlockToCurrentTarget(whenBlock)
 
             for (sub in whenStatement.statements) {
                 sub.visit(this)
             }
         }
+        TODO()
     }
 
-    private fun addBlockToCurrentTarget(block: Block, id: String) {
-        val target = this.sprite ?: this.stage
-        target.blocks[id] = block
+    private fun visitStatements(statements: List<Statement>) {
+
+    }
+
+    private fun addBlockToCurrentTarget(block: Block) {
+        val target = this.currentSprite ?: this.stage
+        target.blocks[block.id] = block
+
+        val lastBlock = this.lastBlock
+        block.parent = lastBlock?.id
+        if (lastBlock != null) {
+            lastBlock.next = block.id
+        }
+        this.lastBlock = block
     }
 
     private fun setVariable() {

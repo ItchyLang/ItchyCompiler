@@ -3,8 +3,6 @@ package net.itchy.scratch.representation
 data class Block
 (
     val opcode : String,
-
-
     var next : String? = null,
     var parent : String? = null,
     val topLevel : Boolean = true,

@@ -6,13 +6,8 @@ import net.itchy.ast.expressions.Expression
 
 data class VariableDeclarationStatement(
     val name: String,
-    val type: ItchyType,
-    val expression: Expression?
+    val type: ItchyType
 ): Statement() {
-    init {
-        this.expression?.let { this.addParentTo(it) }
-    }
-
     override fun <R> visit(visitor: StatementVisitor<R>): R {
         return visitor.visit(this)
     }
