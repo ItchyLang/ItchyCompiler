@@ -1,0 +1,6 @@
+package representation
+
+class ScratchGenerator
+{
+
+}
