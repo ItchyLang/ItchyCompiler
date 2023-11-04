@@ -61,4 +61,13 @@ enum class TokenType(
     fun asString(): String {
         return this.asString ?: this.toString()
     }
+
+    companion object {
+        val ASSIGNMENTS_TO_OPERATOR = mapOf(
+            PLUS_ASSIGN to PLUS,
+            MINUS_ASSIGN to MINUS,
+            MULTIPLY_ASSIGN to MULTIPLY,
+            DIVIDE_ASSIGN to DIVIDE,
+        )
+    }
 }

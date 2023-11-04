@@ -1,6 +1,22 @@
 package net.itchy.utils
 
 object StringUtils {
+    fun String.toNumber(): Double {
+        var s = this
+        require(s.isNotBlank()) { "Cannot convert an empty string to a number" }
+
+        // First check if the value is negative.
+        val isNegative = s[0] == '-'
+        if (isNegative) {
+            // If the string is negative, we remove the first character.
+            s = s.substring(1)
+        }
+
+        // Check for hex
+        val result = if (s.startsWith("0x")) s.substring(2).toLong(16).toDouble() else s.toDouble()
+        return if (isNegative) -result else result
+    }
+
     fun String.escapeForRegex(): String {
         val sb = StringBuilder()
         var i = 0

@@ -66,6 +66,16 @@ class TokenReader(private val tokens: List<Token>) {
         return offsetIndex < this.tokens.size && offsetIndex >= 0
     }
 
+    fun mustPreviouslyMatch(
+        vararg types: TokenType,
+        message: (Token) -> String = { "Expected type(s) ${types.contentToString()} at ${it.position}" }
+    ) {
+        if (!types.contains(this.type(-1))) {
+            val token = this.peek(-1)
+            throw CompileException(token.position, message(token))
+        }
+    }
+
     fun mustMatch(
         vararg types: TokenType,
         newlines: Boolean = false,
