@@ -1,6 +1,6 @@
-package assets
+package net.itchy.scratch.assets
 
-import representation.Costume
+import net.itchy.scratch.representation.Costume
 import java.io.IOException
 import java.net.URL
 import java.security.MessageDigest
@@ -23,10 +23,7 @@ fun getContentsFromURL(url : String) : ByteArray?
 
 fun getContentsFromFile(path : String) : ByteArray?
 {
-    if (Path(path).exists())
-        return Path(path).readBytes()
-    else
-        return null
+    return if (Path(path).exists()) Path(path).readBytes() else null
 }
 
 fun loadCostume(name : String, path : String,
@@ -40,9 +37,9 @@ fun loadCostume(name : String, path : String,
     // Read file
     val fileContents : ByteArray?
     if (path.startsWith("http://") || path.startsWith("https://"))
-        fileContents = getContentsFromURL(path)?:TODO("URL does not exist, compile error")
+        fileContents = getContentsFromURL(path) ?:TODO("URL does not exist, compile error")
     else
-        fileContents = getContentsFromFile(path)?:TODO("File does not exist, compile error")
+        fileContents = getContentsFromFile(path) ?:TODO("File does not exist, compile error")
 
     // Get file width and height
     val width : Int

@@ -1,4 +1,6 @@
-package representation
+package net.itchy.scratch.representation
+
+import net.itchy.scratch.representation.Mutation
 
 data class ProcedureMutation(
     // Procedure specific members

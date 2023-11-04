@@ -1,4 +1,4 @@
-package util
+package net.itchy.utils
 
 /**
  * Utility class for returning either one of two types.

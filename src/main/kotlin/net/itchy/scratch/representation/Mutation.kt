@@ -1,4 +1,4 @@
-package representation
+package net.itchy.scratch.representation
 
 open class Mutation
 {

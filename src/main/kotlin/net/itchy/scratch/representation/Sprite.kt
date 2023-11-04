@@ -1,4 +1,4 @@
-package representation
+package net.itchy.scratch.representation
 
 data class Sprite(
     // Member cannot be defaulted

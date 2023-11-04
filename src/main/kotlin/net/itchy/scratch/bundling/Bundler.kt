@@ -1,6 +1,6 @@
-package bundling
+package net.itchy.scratch.bundling
 
-import representation.ScratchProject
+import net.itchy.scratch.representation.ScratchProject
 
 class Bundler
 {

@@ -1,4 +1,4 @@
-package util
+package net.itchy.utils
 
 data class VariantValue
 private constructor

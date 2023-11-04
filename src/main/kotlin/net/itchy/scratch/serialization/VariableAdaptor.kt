@@ -1,10 +1,10 @@
-package serialization
+package net.itchy.scratch.serialization
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
-import representation.Variable
+import net.itchy.scratch.representation.Variable
 import java.lang.reflect.Type
 
 class VariableAdaptor : JsonSerializer<Variable>

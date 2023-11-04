@@ -1,6 +1,6 @@
-package representation
+package net.itchy.scratch.representation
 
-import util.VariantValue
+import net.itchy.utils.VariantValue
 
 data class Field
 (
