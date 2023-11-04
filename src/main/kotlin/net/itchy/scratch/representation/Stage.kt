@@ -2,7 +2,7 @@ package net.itchy.scratch.representation
 
 data class Stage
 (
-    override val costumes: ArrayList<Costume>,
+    override val costumes: ArrayList<Costume> = ArrayList(),
 
     override val variables: HashMap<String, Variable> = HashMap(),
     override val blocks: HashMap<String, Block> = HashMap(),

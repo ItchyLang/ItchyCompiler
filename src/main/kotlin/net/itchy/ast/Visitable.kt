@@ -1,7 +1,9 @@
 package net.itchy.ast
 
+import java.util.UUID
+
 abstract class Visitable {
-    val id by lazy { this.hashCode().toString(16) }
+    val id by lazy { UUID.randomUUID().toString() }
 
     lateinit var parent: Visitable
 

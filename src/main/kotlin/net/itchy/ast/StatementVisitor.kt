@@ -3,7 +3,7 @@ package net.itchy.ast
 import net.itchy.ast.statements.*
 
 interface StatementVisitor<R> {
-    fun visit(statement: ExpressionStatement): R
+    fun visit(statement: FunctionCallStatement): R
 
     fun visit(statement: FunctionStatement): R
 
@@ -16,6 +16,8 @@ interface StatementVisitor<R> {
     fun visit(statement: LoopUntilStatement): R
 
     fun visit(statement: SpriteStatement): R
+
+    fun visit(statement: VariableAssignStatement): R
 
     fun visit(statement: VariableDeclarationStatement): R
 

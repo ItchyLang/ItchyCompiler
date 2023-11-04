@@ -6,5 +6,5 @@ data class InputSpec
 (
     val inputType : Int,
     val value : VariantValue,
-    val id : String?
+    val id : String? = null
 )

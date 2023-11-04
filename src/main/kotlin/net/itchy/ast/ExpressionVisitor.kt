@@ -1,6 +1,7 @@
 package net.itchy.ast
 
 import net.itchy.ast.expressions.*
+import net.itchy.ast.statements.VariableAssignStatement
 
 interface ExpressionVisitor<R> {
     fun visit(expression: BinaryOperationExpression): R
@@ -18,6 +19,4 @@ interface ExpressionVisitor<R> {
     fun visit(expression: UnaryOperationExpression): R
 
     fun visit(expression: VariableAccessExpression): R
-
-    fun visit(expression: VariableAssignExpression): R
 }

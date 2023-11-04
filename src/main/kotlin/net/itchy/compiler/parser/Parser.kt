@@ -107,6 +107,13 @@ class Parser(tokens: List<Token>) {
             statements.add(this.statement())
         }
 
+        for (i in 0..< statements.size - 1) {
+            val current = statements[i]
+            val next = statements[i + 1]
+            current.next = next
+            next.previous = current
+        }
+
         return statements
     }
 
@@ -146,36 +153,37 @@ class Parser(tokens: List<Token>) {
         }
     }
 
-    private fun expressionStatement(): ExpressionStatement {
-        val expression = this.expression()
-        return ExpressionStatement(expression)
-    }
-
-    private fun expression(): Expression {
-        return this.assignment()
-    }
-
-    private fun assignment(): Expression {
-        val left = this.logicalOr()
+    private fun expressionStatement(): Statement {
+        val position = this.reader.position()
+        val left = this.expression()
 
         if (this.reader.isMatch(ASSIGN)) {
             if (left !is VariableAccessExpression) {
                 throw CompileException(this.reader.position(-1))
             }
-            return VariableAssignExpression(left.name, this.assignment())
+            return VariableAssignStatement(left.name, this.expression())
         }
         TokenType.ASSIGNMENTS_TO_OPERATOR[this.reader.type()]?.let {
             this.reader.advance()
-            return this.binaryAssignment(left, it, this.assignment())
+            return this.binaryAssignment(left, it, this.expression())
         }
-        return left
+
+        if (left !is FunctionCallExpression) {
+            throw CompileException(position)
+        }
+
+        return FunctionCallStatement(left)
     }
 
-    private fun binaryAssignment(left: Expression, operator: TokenType, right: Expression): VariableAssignExpression {
+    private fun expression(): Expression {
+        return this.logicalOr()
+    }
+
+    private fun binaryAssignment(left: Expression, operator: TokenType, right: Expression): VariableAssignStatement {
         if (left !is VariableAccessExpression) {
             throw CompileException(this.reader.position(-1))
         }
-        return VariableAssignExpression(left.name, BinaryOperationExpression(left, right, operator))
+        return VariableAssignStatement(left.name, BinaryOperationExpression(left, right, operator))
     }
 
     private fun logicalOr(): Expression {

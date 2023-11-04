@@ -3,7 +3,7 @@ package net.itchy.scratch.representation
 data class Sprite(
     // Member cannot be defaulted
     override val name: String,
-    override val costumes: ArrayList<Costume>,
+    override val costumes: ArrayList<Costume> = arrayListOf(),
 
     // Defaults for all members
     override val blocks: HashMap<String, Block> = HashMap(),
