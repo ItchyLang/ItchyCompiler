@@ -8,18 +8,13 @@ fun main()
     val src = """
 sprite X
 {
-    when init
+	when init
 	{
 		load_costume("abby-a", "./abby-a.svg")
 		load_backdrop("backdrop", "./backdrop.svg")
-
-        broadcast("Hello")
+		
+		go_to(200, 200)
 	}
-
-    when received "Hello"
-    {
-        let x : double = 2.3
-    }
 }
         """.trimIndent()
 

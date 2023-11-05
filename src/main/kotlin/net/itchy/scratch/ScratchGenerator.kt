@@ -270,8 +270,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             this.addSerialBlock(block, statement.position)
             return
         }
-        if (expression.name == "broadcast")
-        {
+        if (expression.name == "broadcast") {
             val broadcastID = UUID.randomUUID().toString()
             val broadcastName = (expression.arguments[0] as StringLiteralExpression).literal
 
@@ -292,6 +291,19 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             this.addSerialBlock(broadcastBlock, statement.position)
             return
         }
+        if (expression.name == "go_to")
+        {
+            var block = Block(
+                id = statement.id,
+                opcode = "motion_gotoxy",
+                topLevel = false,
+                inputs = hashMapOf("X" to expression.arguments[0].visit(this),
+                    "Y" to expression.arguments[1].visit((this)))
+            )
+            this.addSerialBlock(block, statement.position)
+            return
+        }
+
 
         expression.visit(this)
     }
