@@ -242,6 +242,33 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(expression: VariableAccessExpression): Input {
+        if (expression.name == "x_position") {
+            val xPositionBlock = Block(
+                id = UUID.randomUUID().toString(),
+                opcode = "motion_xposition",
+                topLevel = false
+            )
+            this.addNestedBlock(xPositionBlock, expression.parent.id)
+            return Input(
+                shadowState = 3,
+                actualInput = Either.left(xPositionBlock.id),
+                obscuredShadow = Either.right(InputSpec())
+            )
+        }
+        if (expression.name == "y_position") {
+            val yPositionBlock = Block(
+                id = UUID.randomUUID().toString(),
+                opcode = "motion_yposition",
+                topLevel = false
+            )
+            this.addNestedBlock(yPositionBlock, expression.parent.id)
+            return Input(
+                shadowState = 3,
+                actualInput = Either.left(yPositionBlock.id),
+                obscuredShadow = Either.right(InputSpec())
+            )
+        }
+
         val scope = this.functionParameterScope
         if (scope != null) {
             val data = scope[expression.name]

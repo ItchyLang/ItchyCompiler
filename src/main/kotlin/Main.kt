@@ -13,7 +13,7 @@ sprite X
 		load_costume("abby-a", "./abby-a.svg")
 		load_backdrop("backdrop", "./backdrop.svg")
 		
-		go_to(200, 200)
+		go_to(x_position + 200, y_position + 200)
 	}
 }
         """.trimIndent()
