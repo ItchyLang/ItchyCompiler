@@ -3,6 +3,7 @@ package net.itchy.scratch.assets
 import net.itchy.scratch.representation.Costume
 import java.io.IOException
 import java.net.URL
+import java.nio.charset.Charset
 import java.security.MessageDigest
 import javax.imageio.ImageIO
 import kotlin.io.path.Path
@@ -42,15 +43,25 @@ fun loadCostume(name : String, path : String,
         fileContents = getContentsFromFile(path) ?:TODO("File does not exist, compile error")
 
     // Get file width and height
-    val width : Int
-    val height : Int
-    val img = ImageIO.read(fileContents.inputStream())
-    width = widthOverride ?: img.width
-    height = heightOverride ?: img.height
+    val (width, height) = readImageDimensions(extension, fileContents)
 
     // Calculate MD5 hash
     val md = MessageDigest.getInstance("MD5")
     val hash = md.digest(fileContents).joinToString(separator = "") { "%02x".format(it) }
 
     return Costume(hash, name, "$hash.$extension", extension, width / 2, height / 2)
+}
+
+fun readImageDimensions(extension: String, contents: ByteArray): Pair<Int, Int> {
+    if (extension == "png") {
+        val image = ImageIO.read(contents.inputStream())
+        return image.width to image.height
+    }
+
+    val widthRegex = """width="((?:[0-9]*[.])?[0-9]+)""".toRegex()
+    val heightRegex = """height="((?:[0-9]*[.])?[0-9]+)""".toRegex()
+    val svgContents = contents.toString(Charset.defaultCharset())
+    val width = widthRegex.find(svgContents)!!.groupValues[1].toDouble().toInt()
+    val height = heightRegex.find(svgContents)!!.groupValues[1].toDouble().toInt()
+    return width to height
 }

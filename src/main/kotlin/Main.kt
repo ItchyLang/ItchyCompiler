@@ -2,12 +2,10 @@ import com.google.gson.GsonBuilder
 import net.itchy.compiler.lexer.Lexer
 import net.itchy.compiler.parser.Parser
 import net.itchy.scratch.ScratchGenerator
-import net.itchy.scratch.assets.loadCostume
 import net.itchy.scratch.representation.*
 import net.itchy.scratch.serialization.*
 import net.itchy.utils.Either
 import net.itchy.utils.VariantValue
-import java.util.*
 
 fun main() {
     // Setup GSON
