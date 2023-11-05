@@ -11,6 +11,7 @@ import net.itchy.scratch.assets.loadCostume
 import net.itchy.scratch.representation.*
 import net.itchy.utils.Either
 import net.itchy.utils.VariantValue
+import java.lang.IllegalStateException
 import java.util.*
 import kotlin.collections.HashMap
 
@@ -417,5 +418,23 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         }
         id?: throw CompileException(position, "No variable with name $varName declared")
         return id to localName
+    }
+
+    private fun willGenerateBlocks(statements: List<Statement>): Boolean {
+        for (statement in statements) {
+            if (statement !is VariableDeclarationStatement) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun findFirstBlock(statements: List<Statement>): String {
+        for (statement in statements) {
+            if (statement !is VariableDeclarationStatement) {
+                return statement.id
+            }
+        }
+        throw IllegalStateException()
     }
 }
