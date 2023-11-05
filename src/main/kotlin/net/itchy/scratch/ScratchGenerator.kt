@@ -242,12 +242,13 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             )
         }
 
+        val previous = statement.condition.parent
         val condition = BinaryOperationExpression(
             statement.condition,
             BooleanLiteralExpression(true),
             TokenType.EQUALS
         )
-        condition.parent = statement.condition.parent
+        condition.parent = previous
 
         val ifBlock = Block(
             id = statement.id,
