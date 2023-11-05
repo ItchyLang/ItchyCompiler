@@ -10,6 +10,7 @@ data class LoopUntilStatement(
     val position: TokenPosition
 ): Statement() {
     init {
+        this.addParentTo(this.condition)
         this.addParentTo(this.statements)
     }
 
