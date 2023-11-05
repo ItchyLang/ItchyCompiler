@@ -19,7 +19,7 @@ sprite X
 			let isPrime : boolean = true
 			let fac : double = 2
 			
-			loop count (n - 2)
+			loop until (fac == n)
 			{
 				if (n % fac == 0)
 				{

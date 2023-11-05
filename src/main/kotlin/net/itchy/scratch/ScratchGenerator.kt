@@ -270,18 +270,16 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: LoopCountStatement) {
-        val inputs = if(!willGenerateBlocks(statement.statements))
+        // Generate inputs for count and (possibly) substack
+        val inputs = HashMap<String, Input>()
+        inputs["TIMES"] = statement.count.visit(this)
+        if (willGenerateBlocks(statement.statements))
         {
-            hashMapOf("TIMES" to statement.count.visit(this))
-        }
-        else
-        {
-            hashMapOf("SUBSTACK" to Input(
+            inputs["SUBSTACK"] = Input(
                 shadowState = 2,
                 actualInput = Either.left(findFirstBlock(statement.statements)),
                 obscuredShadow = null
-            ),
-            "TIMES" to statement.count.visit(this))
+            )
         }
 
         // Construct block
@@ -332,7 +330,41 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: LoopUntilStatement) {
-        TODO("Not yet implemented")
+
+        // THIS IS JANK!!!
+        val previous = statement.condition.parent
+        val condition = BinaryOperationExpression(
+            statement.condition,
+            BooleanLiteralExpression(true),
+            TokenType.EQUALS
+        )
+        condition.parent = previous
+
+        val inputs = HashMap<String, Input>()
+        inputs["CONDITION"] = condition.visit(this)
+        if (willGenerateBlocks(statement.statements))
+        {
+            inputs["SUBSTACK"] = Input(
+                shadowState = 2,
+                actualInput = Either.left(findFirstBlock(statement.statements)),
+                obscuredShadow = null
+            )
+        }
+
+        // Construct block
+        val loopBlock = Block(
+            id = statement.id,
+            opcode = "control_repeat_until",
+            topLevel = false,
+            inputs = inputs
+        )
+
+        // Add block to representation and update references
+        this.addSerialBlock(loopBlock, statement.position)
+
+        this.visitStatements(statement.statements)
+        this.lastBlock = loopBlock
+        loopBlock.next = null
     }
 
     override fun visit(statement: SpriteStatement) {
