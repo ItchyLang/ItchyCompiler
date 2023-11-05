@@ -38,7 +38,6 @@ fun bundle(name: String, representation: ScratchProject, outPath: String) {
             fileNameInZip = "project.json"
         }
         val json = gson.toJson(representation)
-        println(json)
 
         zip.addStream(json.byteInputStream(), parameters)
         zip.close()
