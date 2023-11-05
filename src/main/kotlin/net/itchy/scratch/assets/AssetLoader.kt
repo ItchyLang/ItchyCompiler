@@ -68,6 +68,7 @@ fun readImageDimensions(extension: String, contents: ByteArray): Pair<Int, Int> 
         return image.width to image.height
     }
 
+    // THIS IS JANK!!!!
     val widthRegex = """width="((?:[0-9]*[.])?[0-9]+)""".toRegex()
     val heightRegex = """height="((?:[0-9]*[.])?[0-9]+)""".toRegex()
     val svgContents = contents.toString(Charset.defaultCharset())

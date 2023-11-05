@@ -12,15 +12,20 @@ import net.itchy.utils.VariantValue
 import java.util.*
 
 class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
-    val scratchProject = ScratchProject()
+    private val scratchProject = ScratchProject()
 
-    val stage = Stage()
-    var currentSprite: Sprite? = null
+    private val stage = Stage()
+    private var currentSprite: Sprite? = null
 
-    var lastBlock: Block? = null
+    private var lastBlock: Block? = null
 
     init {
         this.scratchProject.targets.add(this.stage)
+    }
+
+    fun generate(statements: List<Statement>): ScratchProject {
+        this.visitStatements(statements)
+        return this.scratchProject
     }
 
     override fun visit(expression: BinaryOperationExpression): Input {
