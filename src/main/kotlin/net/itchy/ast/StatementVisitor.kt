@@ -15,6 +15,8 @@ interface StatementVisitor<R> {
 
     fun visit(statement: LoopUntilStatement): R
 
+    fun visit(statement: ReturnStatement): R
+
     fun visit(statement: SpriteStatement): R
 
     fun visit(statement: VariableAssignStatement): R
