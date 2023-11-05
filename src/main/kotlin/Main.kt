@@ -6,27 +6,34 @@ import net.itchy.scratch.bundling.bundle
 fun main()
 {
     val src = """
-        let x : double = 1.0
-        
-        sprite X
-        {
-            when init
-            {
-                load_costume("abby-a", "./abby-a.svg")
-                load_backdrop("backdrop", "./backdrop.svg")
-                
-                x = 3.6
-                loop forever
-                {
-                    say("Hello")
-                }
-            }
-        }
-        
-        when init
-        {
-            x = 2.1
-        }
+sprite X
+{
+	when init
+	{
+		load_costume("abby-a", "./abby-a.svg")
+		load_backdrop("backdrop", "./backdrop.svg")
+		
+		let n : double = 2
+		loop forever
+		{
+			let isPrime : boolean = true
+			let fac : double = 2
+			
+			loop count (n - 2)
+			{
+				if (n % fac == 0)
+				{
+					isPrime = false	
+				}
+				fac += 1
+			}
+
+			if (isPrime) { say(n) }
+			
+			n += 1
+		}
+	}
+}
         """.trimIndent()
 
     // Lexing

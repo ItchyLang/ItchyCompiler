@@ -235,15 +235,15 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: LoopCountStatement) {
-        val inputs = if(statement.statements.isEmpty())
+        val inputs = if(!willGenerateBlocks(statement.statements))
         {
-            hashMapOf()
+            hashMapOf("TIMES" to statement.count.visit(this))
         }
         else
         {
             hashMapOf("SUBSTACK" to Input(
                 shadowState = 2,
-                actualInput = Either.left(statement.statements[0].id),
+                actualInput = Either.left(findFirstBlock(statement.statements)),
                 obscuredShadow = null
             ),
             "TIMES" to statement.count.visit(this))
@@ -252,7 +252,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         // Construct block
         val loopBlock = Block(
             id = statement.id,
-            opcode = "control_forever",
+            opcode = "control_repeat",
             topLevel = false,
             inputs = inputs
         )
@@ -266,7 +266,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: LoopForeverStatement) {
-        val inputs = if(statement.statements.isEmpty())
+        val inputs = if(!willGenerateBlocks(statement.statements))
         {
             hashMapOf()
         }
@@ -274,7 +274,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         {
             hashMapOf("SUBSTACK" to Input(
                 shadowState = 2,
-                actualInput = Either.left(statement.statements[0].id),
+                actualInput = Either.left(findFirstBlock(statement.statements)),
                 obscuredShadow = null
             ))
         }
