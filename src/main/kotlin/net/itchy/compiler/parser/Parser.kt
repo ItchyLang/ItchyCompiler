@@ -296,7 +296,7 @@ class Parser(tokens: List<Token>) {
                 }
             }
 
-            return FunctionCallExpression(expression.name, arguments)
+            return FunctionCallExpression(expression.name, arguments, expression.position)
         }
         return expression
     }

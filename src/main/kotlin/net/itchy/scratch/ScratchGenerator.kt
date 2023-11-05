@@ -27,6 +27,9 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
 
     private var currentScopes = ArrayDeque<HashMap<String, String>>()
 
+    private var functionParameterScope: HashMap<String, Pair<String, Boolean>>? = null
+    private var functionScope: HashMap<String, List<Pair<String, Boolean>>> = HashMap()
+
     private var lastBlock: Block? = null
 
     private var hasScopeEnded = false
@@ -123,7 +126,41 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(expression: FunctionCallExpression): Input {
-        TODO("Not yet implemented")
+        val fScope = this.functionScope
+        val data = fScope[expression.name]
+        if (data != null) {
+            if (data.size != expression.arguments.size) {
+                throw CompileException(expression.position, "Argument sizes do not match")
+            }
+
+            val inputs = HashMap<String, Input>()
+            for ((i, pair) in data.withIndex()) {
+                inputs[pair.first] = expression.arguments[i].visit(this)
+                    .copy(shadowState = if (pair.second) 2 else 1)
+            }
+
+            val callBlock = Block(
+                id = expression.id,
+                opcode = "procedures_call",
+                inputs = inputs,
+                topLevel = false,
+                mutation = ProcedureMutation(
+                    procCode = "${expression.name} ${data.joinToString(" ") { if (it.second) "%b" else "%s" }}",
+                    argumentIds = data.map { it.first },
+                    warp = false,
+                    argumentNames = emptyList()
+                )
+            )
+            this.addSerialBlock(callBlock, expression.position)
+        } else {
+            TODO("Not yet implemented")
+        }
+
+        return Input(
+            shadowState = 1,
+            actualInput = Either.right(InputSpec(4, VariantValue(0.0), null)),
+            obscuredShadow = null
+        )
     }
 
     override fun visit(expression: NumberLiteralExpression): Input {
@@ -174,6 +211,28 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(expression: VariableAccessExpression): Input {
+        val scope = this.functionParameterScope
+        if (scope != null) {
+            val data = scope[expression.name]
+            if (data != null) {
+                val (id, isBoolean) = data
+                val reporterBlock = Block(
+                    id = UUID.randomUUID().toString(),
+                    opcode = "argument_reporter_" + if (isBoolean) "boolean" else "string_number",
+                    fields = hashMapOf(
+                        "VALUE" to Field(VariantValue(expression.name), null)
+                    ),
+                    topLevel = false
+                )
+                this.addNestedBlock(reporterBlock, expression.parent.id)
+                return Input(
+                    shadowState = 3,
+                    actualInput = Either.left(reporterBlock.id),
+                    obscuredShadow = Either.right(InputSpec())
+                )
+            }
+        }
+
         val (id, localName) = getVariableId(expression.name, expression.position)
 
         return Input(
@@ -209,6 +268,8 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                 )
             )
             this.addSerialBlock(block, statement.position)
+        } else {
+            expression.visit(this)
         }
     }
 
@@ -230,6 +291,12 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             )
         )
 
+        val scope = HashMap<String, Pair<String, Boolean>>()
+        this.functionParameterScope = scope
+
+        val paramData = ArrayList<Pair<String, Boolean>>()
+        this.functionScope[statement.name] = paramData
+
         for (parameter in statement.parameters) {
             val paramBlock = Block(
                 id = UUID.randomUUID().toString(),
@@ -244,7 +311,8 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             argumentIds.add(newId)
             inputs[newId] = Input(1, Either.left(paramBlock.id), null)
             this.addNestedBlock(paramBlock, funcProtoBlock.id)
-
+            scope[parameter.name] = paramBlock.id to (parameter.type == ItchyType.BOOLEAN)
+            paramData.add(newId to (parameter.type == ItchyType.BOOLEAN))
         }
 
         this.addNestedBlock(funcProtoBlock, statement.id)
@@ -266,6 +334,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         this.addSerialBlock(funcDefBlock, statement.position)
 
         this.visitStatements(statement.statements)
+        this.functionParameterScope = null
     }
 
     override fun visit(statement: IfStatement) {
@@ -384,7 +453,6 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: LoopUntilStatement) {
-
         // THIS IS JANK!!!
         val previous = statement.condition.parent
         val condition = BinaryOperationExpression(
@@ -447,6 +515,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         )
         this.addSerialBlock(stopBlock, statement.position)
         this.hasScopeEnded = true
+        this.lastBlock = null
     }
 
     override fun visit(statement: SpriteStatement) {

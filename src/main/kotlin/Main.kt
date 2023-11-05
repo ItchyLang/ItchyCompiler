@@ -8,15 +8,17 @@ fun main()
     val src = """
 sprite X
 {
-	when init
-	{
-		load_costume("abby-a", "./abby-a.svg")
-		load_backdrop("backdrop", "./backdrop.svg")
-	}
-
     func foo_bar(a: string, b: string, c: string, d: boolean) {
         return a + b + c
     }
+    
+    when init
+	{
+		load_costume("abby-a", "./abby-a.svg")
+		load_backdrop("backdrop", "./backdrop.svg")
+
+        let x: double = foo_bar(1, 2, 3, false)
+	}
 }
         """.trimIndent()
 
