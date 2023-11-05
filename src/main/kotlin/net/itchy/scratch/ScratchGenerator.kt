@@ -153,13 +153,44 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             )
             this.addSerialBlock(callBlock, expression.position)
         } else {
+            return Input(
+                shadowState = 1,
+                actualInput = Either.right(InputSpec(4, VariantValue(0.0), null)),
+                obscuredShadow = null
+            )
             TODO("Not yet implemented")
         }
 
+        val lengthOflist = Block(
+            id = UUID.randomUUID().toString(),
+            opcode = "data_lengthoflength",
+            topLevel = false,
+            fields = hashMapOf(
+                "LIST" to Field(VariantValue("returns"), "wellsmuir")
+            )
+        )
+        val dataInList = Block(
+            id = UUID.randomUUID().toString(),
+            opcode = "data_itemoflist",
+            topLevel = false,
+            inputs = mapOf(
+                "INDEX" to Input(
+                    3,
+                    Either.left(lengthOflist.id),
+                    Either.right(InputSpec())
+                )
+            ),
+            fields = hashMapOf(
+                "LIST" to Field(VariantValue("returns"), "wellsmuir")
+            )
+        )
+        lengthOflist.parent = dataInList.id
+        dataInList.parent = expression.parent.id
+
         return Input(
             shadowState = 1,
-            actualInput = Either.right(InputSpec(4, VariantValue(0.0), null)),
-            obscuredShadow = null
+            actualInput = Either.left(dataInList.id),
+            obscuredShadow = Either.right(InputSpec())
         )
     }
 
