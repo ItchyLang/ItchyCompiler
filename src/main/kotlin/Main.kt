@@ -2,24 +2,13 @@ import com.google.gson.GsonBuilder
 import net.itchy.compiler.lexer.Lexer
 import net.itchy.compiler.parser.Parser
 import net.itchy.scratch.ScratchGenerator
+import net.itchy.scratch.bundling.bundle
 import net.itchy.scratch.representation.*
 import net.itchy.scratch.serialization.*
 import net.itchy.utils.Either
 import net.itchy.utils.VariantValue
 
 fun main() {
-    // Setup GSON
-    val gson = GsonBuilder()
-        .registerTypeAdapter(VariantValue::class.java, VariantValueAdaptor())
-        .registerTypeAdapter(Either::class.java, EitherAdaptor())
-        .registerTypeAdapter(InputSpec::class.java, InputSpecAdaptor())
-        .registerTypeAdapter(Input::class.java, InputAdaptor())
-        .registerTypeAdapter(Field::class.java, FieldAdaptor())
-        .registerTypeAdapter(Variable::class.java, VariableAdaptor())
-        .serializeNulls()
-        .setPrettyPrinting()
-        .create()
-
     /*
     // ====== Construct Scratch Project ======
     val assetPath = "C:\\Users\\matty\\Desktop\\Scratch Examples\\Fields"
@@ -72,5 +61,5 @@ fun main() {
     for (statement in ast) {
         statement.visit(generator)
     }
-    println(gson.toJson(generator.scratchProject))
+    bundle("SaySum", generator.scratchProject, ".")
 }

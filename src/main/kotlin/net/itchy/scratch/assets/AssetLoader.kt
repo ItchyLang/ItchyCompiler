@@ -49,7 +49,15 @@ fun loadCostume(name : String, path : String,
     val md = MessageDigest.getInstance("MD5")
     val hash = md.digest(fileContents).joinToString(separator = "") { "%02x".format(it) }
 
-    return Costume(hash, name, "$hash.$extension", extension, width / 2, height / 2)
+    return Costume(
+        fileContents,
+        hash,
+        name,
+        "$hash.$extension",
+        extension,
+        width / 2,
+        height / 2
+    )
 }
 
 fun readImageDimensions(extension: String, contents: ByteArray): Pair<Int, Int> {
