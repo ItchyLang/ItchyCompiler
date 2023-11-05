@@ -17,6 +17,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     private val scratchProject = ScratchProject()
 
     private val stage = Stage()
+
     private var currentSprite: Sprite? = null
 
     private var currentScopes = ArrayDeque<HashMap<String, String>>()
@@ -135,7 +136,13 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(expression: VariableAccessExpression): Input {
-        TODO("Not yet implemented")
+        val (id, localName) = getVariableId(expression.name)
+
+        return Input(
+            shadowState = 3,
+            actualInput = Either.right(InputSpec(12, VariantValue(localName), id)),
+            obscuredShadow = Either.right(InputSpec())
+        )
     }
 
     override fun visit(statement: FunctionCallStatement) {
@@ -226,11 +233,65 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: LoopCountStatement) {
-        TODO("Not yet implemented")
+        val inputs = if(statement.statements.isEmpty())
+        {
+            hashMapOf()
+        }
+        else
+        {
+            hashMapOf("SUBSTACK" to Input(
+                shadowState = 2,
+                actualInput = Either.left(statement.statements[0].id),
+                obscuredShadow = null
+            ),
+            "TIMES" to statement.count.visit(this))
+        }
+
+        // Construct block
+        val loopBlock = Block(
+            id = statement.id,
+            opcode = "control_forever",
+            topLevel = false,
+            inputs = inputs
+        )
+
+        // Add block to representation and update references
+        this.addSerialBlock(loopBlock)
+
+        this.visitStatements(statement.statements)
+        this.lastBlock = loopBlock
+        loopBlock.next = null
     }
 
     override fun visit(statement: LoopForeverStatement) {
-        TODO("Not yet implemented")
+        val inputs = if(statement.statements.isEmpty())
+        {
+            hashMapOf()
+        }
+        else
+        {
+            hashMapOf("SUBSTACK" to Input(
+                shadowState = 2,
+                actualInput = Either.left(statement.statements[0].id),
+                obscuredShadow = null
+            ))
+        }
+
+        // Construct block
+        val loopBlock = Block(
+            id = statement.id,
+            opcode = "control_forever",
+            topLevel = false,
+            inputs = inputs
+        )
+
+        // Add block to representation and update references
+        this.addSerialBlock(loopBlock)
+
+        this.visitStatements(statement.statements)
+        this.hasScopeEnded = true
+        this.lastBlock = null
+        loopBlock.next = null
     }
 
     override fun visit(statement: LoopUntilStatement) {
@@ -250,7 +311,31 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: VariableAssignStatement) {
-        TODO("Not yet implemented")
+        if (this.lastBlock == null)
+        {
+            // Create a when init block
+            val whenStatement = WhenStatement(
+                "init", null, listOf(statement)
+            )
+            statement.parent = whenStatement
+            whenStatement.visit(this)
+            this.lastBlock = null
+            return
+        }
+
+        // Look for variable id
+        val (id, localName) = getVariableId(statement.name)
+
+        // Generate variable assign block
+        val varAssignBlock = Block(
+            id = statement.id,
+            opcode = "data_setvariableto",
+            topLevel = false,
+            fields = hashMapOf("VARIABLE" to Field(VariantValue(localName), id)),
+            inputs = hashMapOf("VALUE" to statement.assignee.visit(this)),
+        )
+
+        addSerialBlock(varAssignBlock)
     }
 
     override fun visit(statement: VariableDeclarationStatement) {
@@ -284,10 +369,14 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         this.visitStatements(statement.statements)
     }
 
+    // Called anytime we enter a new scope (if, loop, function, etc.)
     private fun visitStatements(statements: List<Statement>) {
+        currentScopes.push(hashMapOf()) // Push stack frame
         for (sub in statements) {
             sub.visit(this)
         }
+        this.hasScopeEnded = false
+        currentScopes.pop() // Pop stack frame
     }
 
     private fun addSerialBlock(block: Block) {
@@ -311,5 +400,21 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         target.blocks[block.id] = block
 
         block.parent = parent
+    }
+
+    private fun getVariableId(varName : String): Pair<String, String> {
+        var id : String? = null
+        var localName = ""
+        for (stackFrame in currentScopes.descendingIterator())
+        {
+            if (stackFrame.containsKey(varName))
+            {
+                id?.let { TODO("Multiply defined variable, no location information") }
+                id = stackFrame[varName]
+                localName = "${varName}${System.identityHashCode(stackFrame)}"
+            }
+        }
+        id?: TODO("Variable not found, no location information")
+        return id to localName
     }
 }
