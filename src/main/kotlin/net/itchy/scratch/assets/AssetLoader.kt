@@ -43,7 +43,9 @@ fun loadCostume(name : String, path : String,
         fileContents = getContentsFromFile(path) ?:TODO("File does not exist, compile error")
 
     // Get file width and height
-    val (width, height) = readImageDimensions(extension, fileContents)
+    var (width, height) = readImageDimensions(extension, fileContents)
+    width = widthOverride?:width
+    height = heightOverride?:height
 
     // Calculate MD5 hash
     val md = MessageDigest.getInstance("MD5")

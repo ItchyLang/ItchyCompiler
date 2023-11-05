@@ -52,7 +52,17 @@ fun main() {
     println(gson.toJson(proj))
     */
 
-    val tokens = Lexer("sprite X { when init { say(1 + 2) } }").lex()
+    val tokens = Lexer("""
+        sprite X
+        {
+            when init
+            {
+                load_costume("abby-a", "C:\\Users\\matty\\Desktop\\HelloWorldTest\\abby-a.svg")
+                load_backdrop("backdrop", "C:\\Users\\matty\\Desktop\\HelloWorldTest\\backdrop.svg")
+                say(1 + 2)
+            }
+        }
+        """.trimIndent()).lex()
 
     val ast = Parser(tokens).parse()
     println(ast)

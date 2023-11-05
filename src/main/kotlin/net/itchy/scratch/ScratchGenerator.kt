@@ -121,8 +121,6 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             )
             this.addSerialBlock(block)
         }
-
-        TODO("Not yet implemented")
     }
 
     override fun visit(statement: FunctionStatement) {
