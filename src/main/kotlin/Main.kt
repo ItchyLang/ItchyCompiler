@@ -22,6 +22,7 @@ fun main() {
         .setPrettyPrinting()
         .create()
 
+    /*
     // ====== Construct Scratch Project ======
     val assetPath = "C:\\Users\\matty\\Desktop\\Scratch Examples\\Fields"
 
@@ -62,4 +63,16 @@ fun main() {
     val proj = ScratchProject(arrayListOf(stage), arrayListOf(mattyVarMonitor))
 
     println(gson.toJson(proj))
+    */
+
+    val tokens = Lexer("sprite X { when init { say(1 + 2) } }").lex()
+
+    val ast = Parser(tokens).parse()
+    println(ast)
+
+    val generator = ScratchGenerator()
+    for (statement in ast) {
+        statement.visit(generator)
+    }
+    println(gson.toJson(generator.scratchProject))
 }
