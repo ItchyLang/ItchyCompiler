@@ -12,8 +12,8 @@ abstract class Target
     abstract val sounds : ArrayList<Sound>
     abstract val layerOrder : Int
     abstract val volume : Int
+    abstract val lists : HashMap<String, ScratchList>
 
     // Completely forced
-    val lists : HashMap<Int, Int> = HashMap()
     val comments : HashMap<Int, Int> = HashMap()
 }

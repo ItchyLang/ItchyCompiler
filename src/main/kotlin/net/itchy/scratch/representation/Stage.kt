@@ -20,4 +20,5 @@ data class Stage
     override val layerOrder: Int = 0
     override val currentCostume: Int = 0
     override val volume: Int = 100
+    override val lists: HashMap<String, ScratchList> = hashMapOf("wellsmuir" to ScratchList("returns"))
 }

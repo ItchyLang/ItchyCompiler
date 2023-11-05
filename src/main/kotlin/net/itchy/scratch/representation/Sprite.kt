@@ -26,4 +26,5 @@ data class Sprite(
 {
     // Completely forced
     override val isStage: Boolean = false
+    override val lists: HashMap<String, ScratchList> = hashMapOf()
 }
