@@ -5,18 +5,22 @@ import net.itchy.scratch.bundling.bundle
 
 fun main()
 {
-    val tokens = Lexer("""
+    val src = """
         sprite X
         {
             when init
             {
                 load_costume("abby-a", "C:\\Users\\matty\\Desktop\\HelloWorldTest\\abby-a.svg")
                 load_backdrop("backdrop", "C:\\Users\\matty\\Desktop\\HelloWorldTest\\backdrop.svg")
-                say(1 + 2)
+                say(1 + 2 + 3)
             }
         }
-        """.trimIndent()).lex()
+        """.trimIndent()
 
+    // Lexing
+    val tokens = Lexer(src).lex()
+
+    // Parsing
     val ast = Parser(tokens).parse()
 
     // Generating
