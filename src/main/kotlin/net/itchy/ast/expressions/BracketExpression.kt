@@ -6,7 +6,7 @@ data class BracketExpression(
     val expression: Expression
 ): Expression() {
     init {
-        this.addParentTo(this.expression)
+        this.expression.parent = this.parent
     }
 
     override fun <R> visit(visitor: ExpressionVisitor<R>): R {

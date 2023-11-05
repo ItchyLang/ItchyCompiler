@@ -314,7 +314,7 @@ class Parser(tokens: List<Token>) {
                 this.reader.mustMatch(RIGHT_BRACKET) {
                     "Expected closing ')' after expression"
                 }
-                BracketExpression(expression)
+                expression
             }
             else -> throw CompileException(token.position)
         }

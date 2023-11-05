@@ -163,7 +163,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
 
         val lengthOflist = Block(
             id = UUID.randomUUID().toString(),
-            opcode = "data_lengthoflength",
+            opcode = "data_lengthoflist",
             topLevel = false,
             fields = hashMapOf(
                 "LIST" to Field(VariantValue("returns"), "wellsmuir")
@@ -184,11 +184,11 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                 "LIST" to Field(VariantValue("returns"), "wellsmuir")
             )
         )
-        lengthOflist.parent = dataInList.id
-        dataInList.parent = expression.parent.id
+        this.addNestedBlock(lengthOflist, dataInList.id)
+        this.addNestedBlock(dataInList, expression.parent.id)
 
         return Input(
-            shadowState = 1,
+            shadowState = 3,
             actualInput = Either.left(dataInList.id),
             obscuredShadow = Either.right(InputSpec())
         )
@@ -225,20 +225,14 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             else -> { }
         }
 
-        val block = Block(
-            id = expression.id,
-            opcode = "operator_not",
-            topLevel = false,
-            inputs = mapOf(
-                "OPERAND" to expression.expression.visit(this)
-            )
+        val previous = expression.expression.parent
+        val condition = BinaryOperationExpression(
+            expression.expression,
+            BooleanLiteralExpression(false),
+            TokenType.EQUALS
         )
-        this.addNestedBlock(block, expression.parent.id)
-        return Input(
-            shadowState = 3,
-            actualInput = Either.left(block.id),
-            obscuredShadow = Either.right(InputSpec(4, VariantValue(0.0)))
-        )
+        condition.parent = previous
+        return condition.visit(this)
     }
 
     override fun visit(expression: VariableAccessExpression): Input {
@@ -705,6 +699,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         currentScopes.pop() // Pop stack frame
     }
 
+    // BUG WHEN ADDING BLOCK TO SUBSTACKABLE BLOCKS
     private fun addSerialBlock(block: Block, position: TokenPosition) {
         if (this.hasScopeEnded) {
             throw CompileException(position, "Cannot add statements after 'loop forever' or 'stop'")
