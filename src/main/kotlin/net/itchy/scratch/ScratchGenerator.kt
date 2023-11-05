@@ -5,6 +5,7 @@ import net.itchy.ast.StatementVisitor
 import net.itchy.ast.expressions.*
 import net.itchy.ast.statements.*
 import net.itchy.compiler.CompileException
+import net.itchy.compiler.token.TokenPosition
 import net.itchy.compiler.token.TokenType
 import net.itchy.scratch.assets.loadCostume
 import net.itchy.scratch.representation.*
@@ -136,7 +137,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(expression: VariableAccessExpression): Input {
-        val (id, localName) = getVariableId(expression.name)
+        val (id, localName) = getVariableId(expression.name, expression.position)
 
         return Input(
             shadowState = 3,
@@ -170,7 +171,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                     "MESSAGE" to expression.arguments[0].visit(this)
                 )
             )
-            this.addSerialBlock(block)
+            this.addSerialBlock(block, statement.position)
         }
     }
 
@@ -223,7 +224,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                 "SUBSTACK2" to subStack2
             )
         )
-        this.addSerialBlock(ifBlock)
+        this.addSerialBlock(ifBlock, statement.position)
 
         this.visitStatements(statement.ifStatements)
         this.lastBlock = ifBlock
@@ -256,7 +257,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         )
 
         // Add block to representation and update references
-        this.addSerialBlock(loopBlock)
+        this.addSerialBlock(loopBlock, statement.position)
 
         this.visitStatements(statement.statements)
         this.lastBlock = loopBlock
@@ -286,7 +287,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         )
 
         // Add block to representation and update references
-        this.addSerialBlock(loopBlock)
+        this.addSerialBlock(loopBlock, statement.position)
 
         this.visitStatements(statement.statements)
         this.hasScopeEnded = true
@@ -315,7 +316,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         {
             // Create a when init block
             val whenStatement = WhenStatement(
-                "init", null, listOf(statement)
+                "init", null, listOf(statement), statement.position
             )
             statement.parent = whenStatement
             whenStatement.visit(this)
@@ -324,7 +325,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         }
 
         // Look for variable id
-        val (id, localName) = getVariableId(statement.name)
+        val (id, localName) = getVariableId(statement.name, statement.position)
 
         // Generate variable assign block
         val varAssignBlock = Block(
@@ -335,7 +336,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             inputs = hashMapOf("VALUE" to statement.assignee.visit(this)),
         )
 
-        addSerialBlock(varAssignBlock)
+        addSerialBlock(varAssignBlock, statement.position)
     }
 
     override fun visit(statement: VariableDeclarationStatement) {
@@ -365,7 +366,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             parent = null,
             topLevel = true,
         )
-        this.addSerialBlock(whenBlock)
+        this.addSerialBlock(whenBlock, statement.position)
         this.visitStatements(statement.statements)
     }
 
@@ -379,9 +380,9 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         currentScopes.pop() // Pop stack frame
     }
 
-    private fun addSerialBlock(block: Block) {
+    private fun addSerialBlock(block: Block, position: TokenPosition) {
         if (this.hasScopeEnded) {
-            TODO("Scope has finished, please don't add more")
+            throw CompileException(position, "Cannot add statements after 'loop forever' or 'stop'")
         }
 
         val target = this.currentSprite ?: this.stage
@@ -402,19 +403,19 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         block.parent = parent
     }
 
-    private fun getVariableId(varName : String): Pair<String, String> {
+    private fun getVariableId(varName : String, position: TokenPosition): Pair<String, String> {
         var id : String? = null
         var localName = ""
         for (stackFrame in currentScopes.descendingIterator())
         {
             if (stackFrame.containsKey(varName))
             {
-                id?.let { TODO("Multiply defined variable, no location information") }
+                id?.let { throw CompileException(position, "Variable $varName already defined") }
                 id = stackFrame[varName]
                 localName = "${varName}${System.identityHashCode(stackFrame)}"
             }
         }
-        id?: TODO("Variable not found, no location information")
+        id?: throw CompileException(position, "No variable with name $varName declared")
         return id to localName
     }
 }

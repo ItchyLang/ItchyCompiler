@@ -6,6 +6,7 @@ import net.itchy.ast.expressions.*
 import net.itchy.ast.statements.*
 import net.itchy.compiler.CompileException
 import net.itchy.compiler.token.Token
+import net.itchy.compiler.token.TokenPosition
 import net.itchy.compiler.token.TokenType
 import net.itchy.compiler.token.TokenType.*
 import net.itchy.utils.StringUtils.toNumber
@@ -51,11 +52,11 @@ class Parser(tokens: List<Token>) {
     }
 
     private fun whenDeclaration(): WhenStatement {
-        this.reader.mustMatch(WHEN)
+        val position = this.reader.mustMatch(WHEN).position
         val whenId = this.reader.mustMatch(IDENTIFIER)
         val whenArgument = this.reader.match(STRING)
         val statements = this.statements()
-        return WhenStatement(whenId.content, whenArgument?.content, statements)
+        return WhenStatement(whenId.content, whenArgument?.content, statements, position)
     }
 
     private fun functionDeclaration(): FunctionStatement {
@@ -92,7 +93,8 @@ class Parser(tokens: List<Token>) {
         statements.add(VariableDeclarationStatement(id.content, type))
 
         if (this.reader.isMatch(ASSIGN)) {
-            statements.add(VariableAssignStatement(id.content, this.expression()))
+            val position = this.reader.position()
+            statements.add(VariableAssignStatement(id.content, this.expression(), position))
         }
 
         return statements
@@ -125,7 +127,7 @@ class Parser(tokens: List<Token>) {
     }
 
     private fun ifStatement(): IfStatement {
-        this.reader.mustMatch(IF)
+        val position = this.reader.mustMatch(IF).position
         val condition = this.expression()
         val ifStatements = this.statements()
 
@@ -137,16 +139,16 @@ class Parser(tokens: List<Token>) {
             }
         } else emptyList()
 
-        return IfStatement(condition, ifStatements, elseStatements)
+        return IfStatement(condition, ifStatements, elseStatements, position)
     }
 
     private fun loopStatement(): Statement {
-        this.reader.mustMatch(LOOP)
+        val position = this.reader.mustMatch(LOOP).position
 
         return when {
-            this.reader.isMatch(FOREVER) -> LoopForeverStatement(this.statements())
-            this.reader.isMatch(COUNT) -> LoopCountStatement(this.expression(), this.statements())
-            this.reader.isMatch(UNTIL) -> LoopUntilStatement(this.expression(), this.statements())
+            this.reader.isMatch(FOREVER) -> LoopForeverStatement(this.statements(), position)
+            this.reader.isMatch(COUNT) -> LoopCountStatement(this.expression(), this.statements(), position)
+            this.reader.isMatch(UNTIL) -> LoopUntilStatement(this.expression(), this.statements(), position)
             else -> throw CompileException(this.reader.position(), "Loop must be followed by 'forever', 'count', or 'until'")
         }
     }
@@ -159,11 +161,11 @@ class Parser(tokens: List<Token>) {
             if (left !is VariableAccessExpression) {
                 throw CompileException(this.reader.position(-1))
             }
-            return VariableAssignStatement(left.name, this.expression())
+            return VariableAssignStatement(left.name, this.expression(), position)
         }
         TokenType.ASSIGNMENTS_TO_OPERATOR[this.reader.type()]?.let {
             this.reader.advance()
-            return this.binaryAssignment(left, it, this.expression())
+            return this.binaryAssignment(left, it, this.expression(), position)
         }
 
         if (left !is FunctionCallExpression) {
@@ -177,11 +179,16 @@ class Parser(tokens: List<Token>) {
         return this.logicalOr()
     }
 
-    private fun binaryAssignment(left: Expression, operator: TokenType, right: Expression): VariableAssignStatement {
+    private fun binaryAssignment(
+        left: Expression,
+        operator: TokenType,
+        right: Expression,
+        position: TokenPosition
+    ): VariableAssignStatement {
         if (left !is VariableAccessExpression) {
             throw CompileException(this.reader.position(-1))
         }
-        return VariableAssignStatement(left.name, BinaryOperationExpression(left, right, operator))
+        return VariableAssignStatement(left.name, BinaryOperationExpression(left, right, operator), position)
     }
 
     private fun logicalOr(): Expression {
@@ -295,7 +302,7 @@ class Parser(tokens: List<Token>) {
             this.reader.isMatch(FALSE) -> BooleanLiteralExpression(false)
             this.reader.isMatch(NUMBER) -> NumberLiteralExpression(token.content.toNumber())
             this.reader.isMatch(STRING) -> StringLiteralExpression(token.content.substring(1, token.content.length - 1))
-            this.reader.isMatch(IDENTIFIER) -> VariableAccessExpression(token.content)
+            this.reader.isMatch(IDENTIFIER) -> VariableAccessExpression(token.content, token.position)
             this.reader.isMatch(LEFT_BRACKET) -> {
                 val expression = this.expression()
                 this.reader.mustMatch(RIGHT_BRACKET) {

@@ -1,11 +1,13 @@
 package net.itchy.ast.statements
 
 import net.itchy.ast.StatementVisitor
+import net.itchy.compiler.token.TokenPosition
 
 data class WhenStatement(
     val event: String,
     val eventArgument: String? = null,
-    val statements: List<Statement>
+    val statements: List<Statement>,
+    val position: TokenPosition
 ): Statement() {
     init {
         this.addParentTo(this.statements)
