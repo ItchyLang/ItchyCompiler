@@ -367,6 +367,10 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         loopBlock.next = null
     }
 
+    override fun visit(statement: ReturnStatement) {
+        TODO("Not yet implemented")
+    }
+
     override fun visit(statement: SpriteStatement) {
         val sprite = Sprite(
             name = statement.name,
