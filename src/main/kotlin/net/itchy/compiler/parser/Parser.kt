@@ -66,14 +66,13 @@ class Parser(tokens: List<Token>) {
         val parameters = ArrayList<Parameter>()
 
         this.reader.mustMatch(LEFT_BRACKET)
-        while (!this.reader.isMatch(RIGHT_BRACKET)) {
-            val parameterId = this.reader.mustMatch(IDENTIFIER)
-            this.reader.mustMatch(COLON)
-            val type = this.identifierToType(this.reader.mustMatch(IDENTIFIER))
 
-            this.reader.isMatch(COMMA)
-
-            parameters.add(Parameter(parameterId.content, type))
+        if (!this.reader.isMatch(RIGHT_BRACKET)) {
+            parameters.add(this.createParameter())
+            while (!this.reader.isMatch(RIGHT_BRACKET)) {
+                this.reader.mustMatch(COMMA)
+                parameters.add(this.createParameter())
+            }
         }
 
         val type = if (this.reader.isMatch(COLON)) {
@@ -111,13 +110,6 @@ class Parser(tokens: List<Token>) {
         while (!this.reader.isMatch(RIGHT_CURLY_BRACKET)) {
             this.reader.mustPreviouslyMatch(NEW_LINE)
             statements.addAll(this.statement())
-        }
-
-        for (i in 0..< statements.size - 1) {
-            val current = statements[i]
-            val next = statements[i + 1]
-            current.next = next
-            next.previous = current
         }
 
         return statements
@@ -270,7 +262,30 @@ class Parser(tokens: List<Token>) {
             val unary = this.unary()
             return UnaryOperationExpression(unary, it.type)
         }
-        return atom()
+        return post()
+    }
+
+    private fun post(): Expression {
+        val expression = this.atom()
+
+        if (this.reader.isMatch(LEFT_BRACKET)) {
+            if (expression !is VariableAccessExpression) {
+                throw CompileException(this.reader.position())
+            }
+
+            val arguments = ArrayList<Expression>()
+
+            if (!this.reader.isMatch(RIGHT_BRACKET)) {
+                arguments.add(this.expression())
+                while (!this.reader.isMatch(RIGHT_BRACKET)) {
+                    this.reader.mustMatch(COMMA)
+                    arguments.add(this.expression())
+                }
+            }
+
+            return FunctionCallExpression(expression.name, arguments)
+        }
+        return expression
     }
 
     private fun atom(): Expression {
@@ -294,5 +309,12 @@ class Parser(tokens: List<Token>) {
 
     private fun identifierToType(token: Token): ItchyType {
         return ItchyType.fromString(token.content) ?: throw CompileException(token.position)
+    }
+
+    private fun createParameter(): Parameter {
+        val parameterId = this.reader.mustMatch(IDENTIFIER)
+        this.reader.mustMatch(COLON)
+        val type = this.identifierToType(this.reader.mustMatch(IDENTIFIER))
+        return Parameter(parameterId.content, type)
     }
 }

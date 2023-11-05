@@ -5,13 +5,13 @@ import net.itchy.ast.StatementVisitor
 import net.itchy.ast.expressions.*
 import net.itchy.ast.statements.*
 import net.itchy.compiler.token.TokenType
+import net.itchy.scratch.assets.loadCostume
 import net.itchy.scratch.representation.*
 import net.itchy.utils.Either
 import net.itchy.utils.VariantValue
 import java.util.*
 
-class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
-{
+class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     val scratchProject = ScratchProject()
 
     val stage = Stage()
@@ -19,9 +19,8 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
 
     var lastBlock: Block? = null
 
-
     init {
-
+        this.scratchProject.targets.add(this.stage)
     }
 
     override fun visit(expression: BinaryOperationExpression): Input {
@@ -47,11 +46,11 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
             next = null,
             topLevel = false,
             inputs = mapOf(
-                "${parameterName}1" to right,
-                "${parameterName}2" to left
+                "${parameterName}1" to left,
+                "${parameterName}2" to right
             )
         )
-        this.addBlockToCurrentTarget(block)
+        this.addNestedBlock(block, expression.parent.id)
         return Input(
             3,
             Either.left(block.id),
@@ -73,14 +72,18 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
 
     override fun visit(expression: NumberLiteralExpression): Input {
         return Input(
-            1,
-            Either.right(InputSpec(4, VariantValue(expression.number), null)),
-            null
+            shadowState = 1,
+            actualInput = Either.right(InputSpec(4, VariantValue(expression.number), null)),
+            obscuredShadow = null
         )
     }
 
     override fun visit(expression: StringLiteralExpression): Input {
-        TODO("Not yet implemented")
+        return Input(
+            shadowState = 1,
+            actualInput = Either.right(InputSpec(10, VariantValue(expression.literal), null)),
+            obscuredShadow =null
+        )
     }
 
     override fun visit(expression: UnaryOperationExpression): Input {
@@ -91,39 +94,58 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
         TODO("Not yet implemented")
     }
 
-    override fun visit(statement: FunctionCallStatement): Block {
+    override fun visit(statement: FunctionCallStatement) {
         val expression = statement.expression
+        if (expression.name == "load_costume") {
+            val name = expression.arguments[0] as StringLiteralExpression
+            val location = expression.arguments[1] as StringLiteralExpression
+            val costume = loadCostume(name.literal, location.literal)
+            this.currentSprite?.costumes?.add(costume)
+        }
+
+        if (expression.name == "load_backdrop") {
+            val name = expression.arguments[0] as StringLiteralExpression
+            val location = expression.arguments[1] as StringLiteralExpression
+            val costume = loadCostume(name.literal, location.literal, 480, 360)
+            this.stage.costumes.add(costume)
+        }
+
         if (expression.name == "say") {
-            // Block(
-            //     opcode = "looks_say",
-            //     next =
-            // )
+            val block = Block(
+                id = expression.id,
+                opcode = "looks_say",
+                topLevel = false,
+                inputs = mapOf(
+                    "MESSAGE" to expression.arguments[0].visit(this)
+                )
+            )
+            this.addSerialBlock(block)
         }
 
         TODO("Not yet implemented")
     }
 
-    override fun visit(statement: FunctionStatement): Block {
+    override fun visit(statement: FunctionStatement) {
         TODO("Not yet implemented")
     }
 
-    override fun visit(statement: IfStatement): Block {
+    override fun visit(statement: IfStatement) {
         TODO("Not yet implemented")
     }
 
-    override fun visit(statement: LoopCountStatement): Block {
+    override fun visit(statement: LoopCountStatement) {
         TODO("Not yet implemented")
     }
 
-    override fun visit(statement: LoopForeverStatement): Block {
+    override fun visit(statement: LoopForeverStatement) {
         TODO("Not yet implemented")
     }
 
-    override fun visit(statement: LoopUntilStatement): Block {
+    override fun visit(statement: LoopUntilStatement) {
         TODO("Not yet implemented")
     }
 
-    override fun visit(statement: SpriteStatement): Block? {
+    override fun visit(statement: SpriteStatement) {
         val sprite = Sprite(
             name = statement.name,
         )
@@ -136,15 +158,13 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
 
         this.currentSprite = null
         // THIS IS JANK!!!
-        return null
     }
 
-    override fun visit(statement: VariableAssignStatement): Block {
-
+    override fun visit(statement: VariableAssignStatement) {
         TODO("Not yet implemented")
     }
 
-    override fun visit(statement: VariableDeclarationStatement): Block? {
+    override fun visit(statement: VariableDeclarationStatement) {
 
         val variable = Variable(statement.name, VariantValue(0.0))
         val variableId = UUID.randomUUID().toString()
@@ -158,34 +178,28 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
         TODO()
     }
 
-    override fun visit(whenStatement: WhenStatement): Block? {
-        if (whenStatement.statements.isEmpty()) {
-            TODO()
+    override fun visit(statement: WhenStatement) {
+        val opcode = when (statement.event) {
+            "init" -> "event_whenflagclicked"
+            else -> TODO("Other when statement opcodes")
         }
-
-        val first = whenStatement.statements[0]
-        if (whenStatement.event == "init") {
-            val whenBlock = Block(
-                id = whenStatement.id,
-                opcode = "event_whenflagclicked",
-                next = first.id,
-                parent = null,
-                topLevel = true,
-            )
-            this.addBlockToCurrentTarget(whenBlock)
-
-            for (sub in whenStatement.statements) {
-                sub.visit(this)
-            }
-        }
-        TODO()
+        val whenBlock = Block(
+            id = statement.id,
+            opcode = opcode,
+            parent = null,
+            topLevel = true,
+        )
+        this.addSerialBlock(whenBlock)
+        this.visitStatements(statement.statements)
     }
 
     private fun visitStatements(statements: List<Statement>) {
-
+        for (sub in statements) {
+            sub.visit(this)
+        }
     }
 
-    private fun addBlockToCurrentTarget(block: Block) {
+    private fun addSerialBlock(block: Block) {
         val target = this.currentSprite ?: this.stage
         target.blocks[block.id] = block
 
@@ -195,5 +209,12 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Block?>
             lastBlock.next = block.id
         }
         this.lastBlock = block
+    }
+
+    private fun addNestedBlock(block: Block, parent: String) {
+        val target = this.currentSprite ?: this.stage
+        target.blocks[block.id] = block
+
+        block.parent = parent
     }
 }
