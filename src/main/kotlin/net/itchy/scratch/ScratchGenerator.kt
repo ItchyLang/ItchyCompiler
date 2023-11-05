@@ -11,6 +11,7 @@ import net.itchy.scratch.assets.loadCostume
 import net.itchy.scratch.representation.*
 import net.itchy.utils.Either
 import net.itchy.utils.VariantValue
+import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 import java.util.*
 import kotlin.collections.HashMap
@@ -51,7 +52,40 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             TokenType.LT -> "operator_lt" to "OPERAND"
             TokenType.GT -> "operator_gt" to "OPERAND"
             TokenType.EQUALS -> "operator_equals" to "OPERAND"
-            else -> TODO()
+            TokenType.NOT_EQUALS -> {
+                val unary = UnaryOperationExpression(BinaryOperationExpression(
+                    expression.left, expression.right, TokenType.EQUALS
+                ), TokenType.NOT)
+                unary.parent = expression.parent
+                return unary.visit(this)
+            }
+            TokenType.LT_EQUALS -> {
+                val binary = BinaryOperationExpression(
+                    BinaryOperationExpression(
+                        expression.left, expression.right, TokenType.LT
+                    ),
+                    BinaryOperationExpression(
+                        expression.left, expression.right, TokenType.EQUALS
+                    ),
+                    TokenType.OR
+                )
+                binary.parent = expression.parent
+                return binary.visit(this)
+            }
+            TokenType.GT_EQUALS -> {
+                val binary = BinaryOperationExpression(
+                    BinaryOperationExpression(
+                        expression.left, expression.right, TokenType.GT
+                    ),
+                    BinaryOperationExpression(
+                        expression.left, expression.right, TokenType.EQUALS
+                    ),
+                    TokenType.OR
+                )
+                binary.parent = expression.parent
+                return binary.visit(this)
+            }
+            else -> throw IllegalArgumentException()
         }
         val block = Block(
             id = expression.id,
