@@ -170,7 +170,7 @@ class Parser(tokens: List<Token>) {
             throw CompileException(position)
         }
 
-        return FunctionCallStatement(left)
+        return FunctionCallStatement(left, position)
     }
 
     private fun expression(): Expression {

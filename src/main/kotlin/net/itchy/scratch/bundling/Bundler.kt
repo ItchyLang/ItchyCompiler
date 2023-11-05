@@ -8,9 +8,6 @@ import net.itchy.utils.VariantValue
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import java.io.File
-import java.nio.file.Path
-import kotlin.io.path.writeBytes
-import kotlin.io.path.writeText
 
 // Setup GSON
 private val gson = GsonBuilder()
@@ -25,7 +22,7 @@ private val gson = GsonBuilder()
     .create()
 
 fun bundle(name: String, representation: ScratchProject, outPath: String) {
-    ZipFile("$outPath\\$name.sb3").use { zip ->
+    ZipFile("$outPath${File.separator}$name.sb3").use { zip ->
         for (target in representation.targets) {
             for (costume in target.costumes) {
                 val parameters = ZipParameters().apply {
@@ -38,7 +35,10 @@ fun bundle(name: String, representation: ScratchProject, outPath: String) {
         val parameters = ZipParameters().apply {
             fileNameInZip = "project.json"
         }
-        zip.addStream(gson.toJson(representation).byteInputStream(), parameters)
+        val json = gson.toJson(representation)
+        println(json)
+
+        zip.addStream(json.byteInputStream(), parameters)
         zip.close()
     }
 }

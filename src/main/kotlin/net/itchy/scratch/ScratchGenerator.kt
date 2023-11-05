@@ -4,12 +4,14 @@ import net.itchy.ast.ExpressionVisitor
 import net.itchy.ast.StatementVisitor
 import net.itchy.ast.expressions.*
 import net.itchy.ast.statements.*
+import net.itchy.compiler.CompileException
 import net.itchy.compiler.token.TokenType
 import net.itchy.scratch.assets.loadCostume
 import net.itchy.scratch.representation.*
 import net.itchy.utils.Either
 import net.itchy.utils.VariantValue
 import java.util.*
+import kotlin.collections.HashMap
 
 class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     private val scratchProject = ScratchProject()
@@ -17,7 +19,11 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     private val stage = Stage()
     private var currentSprite: Sprite? = null
 
+    private var currentScopes = ArrayDeque<HashMap<String, String>>()
+
     private var lastBlock: Block? = null
+
+    private var hasScopeEnded = false
 
     init {
         this.scratchProject.targets.add(this.stage)
@@ -57,18 +63,24 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         )
         this.addNestedBlock(block, expression.parent.id)
         return Input(
-            3,
-            Either.left(block.id),
-            Either.right(InputSpec(4, VariantValue(0.0)))
+            shadowState = 3,
+            actualInput = Either.left(block.id),
+            obscuredShadow = Either.right(InputSpec(4, VariantValue(0.0)))
         )
     }
 
     override fun visit(expression: BooleanLiteralExpression): Input {
-        TODO("Not yet implemented")
+        val binary = BinaryOperationExpression(
+            NumberLiteralExpression(0.0),
+            NumberLiteralExpression(if (expression.literal) 0.0 else 1.0),
+            TokenType.EQUALS
+        )
+        binary.parent = expression.parent
+        return binary.visit(this)
     }
 
     override fun visit(expression: BracketExpression): Input {
-        TODO("Not yet implemented")
+        return expression.expression.visit(this)
     }
 
     override fun visit(expression: FunctionCallExpression): Input {
@@ -87,12 +99,39 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         return Input(
             shadowState = 1,
             actualInput = Either.right(InputSpec(10, VariantValue(expression.literal), null)),
-            obscuredShadow =null
+            obscuredShadow = null
         )
     }
 
     override fun visit(expression: UnaryOperationExpression): Input {
-        TODO("Not yet implemented")
+        when (expression.operator) {
+            TokenType.PLUS -> return expression.expression.visit(this)
+            TokenType.MINUS -> {
+                val binary = BinaryOperationExpression(
+                    NumberLiteralExpression(0.0),
+                    expression.expression,
+                    TokenType.MINUS
+                )
+                binary.parent = expression.parent
+                return binary.visit(this)
+            }
+            else -> { }
+        }
+
+        val block = Block(
+            id = expression.id,
+            opcode = "operator_not",
+            topLevel = false,
+            inputs = mapOf(
+                "OPERAND" to expression.expression.visit(this)
+            )
+        )
+        this.addNestedBlock(block, expression.parent.id)
+        return Input(
+            shadowState = 3,
+            actualInput = Either.left(block.id),
+            obscuredShadow = Either.right(InputSpec(4, VariantValue(0.0)))
+        )
     }
 
     override fun visit(expression: VariableAccessExpression): Input {
@@ -117,7 +156,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
 
         if (expression.name == "say") {
             val block = Block(
-                id = expression.id,
+                id = statement.id,
                 opcode = "looks_say",
                 topLevel = false,
                 inputs = mapOf(
@@ -133,7 +172,57 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: IfStatement) {
-        TODO("Not yet implemented")
+        val subStack1 = if (statement.ifStatements.isNotEmpty()) {
+            Input(
+                shadowState = 2,
+                actualInput = Either.left(statement.ifStatements.first().id),
+                obscuredShadow = null
+            )
+        } else {
+            Input(
+                shadowState = 1,
+                actualInput = null,
+                obscuredShadow = null
+            )
+        }
+        val subStack2 = if (statement.elseStatements.isNotEmpty()) {
+            Input(
+                shadowState = 2,
+                actualInput = Either.left(statement.elseStatements.first().id),
+                obscuredShadow = null
+            )
+        } else {
+            Input(
+                shadowState = 1,
+                actualInput = null,
+                obscuredShadow = null
+            )
+        }
+
+        val condition = BinaryOperationExpression(
+            statement.condition,
+            BooleanLiteralExpression(true),
+            TokenType.EQUALS
+        )
+        condition.parent = statement.condition.parent
+
+        val ifBlock = Block(
+            id = statement.id,
+            topLevel = false,
+            opcode = "control_if_else",
+            inputs = mapOf(
+                "CONDITION" to condition.visit(this).copy(shadowState = 2, obscuredShadow = null),
+                "SUBSTACK" to subStack1,
+                "SUBSTACK2" to subStack2
+            )
+        )
+        this.addSerialBlock(ifBlock)
+
+        this.visitStatements(statement.ifStatements)
+        this.lastBlock = ifBlock
+        this.visitStatements(statement.elseStatements)
+        this.lastBlock = ifBlock
+        ifBlock.next = null
     }
 
     override fun visit(statement: LoopCountStatement) {
@@ -155,12 +244,9 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         this.scratchProject.targets.add(sprite)
         this.currentSprite = sprite
 
-        for (child in statement.statements) {
-            child.visit(this)
-        }
+        this.visitStatements(statement.statements)
 
         this.currentSprite = null
-        // THIS IS JANK!!!
     }
 
     override fun visit(statement: VariableAssignStatement) {
@@ -168,17 +254,19 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: VariableDeclarationStatement) {
+        // Get local name
+        val localName = "${statement.name}${System.identityHashCode(currentScopes.peek())}"
 
-        val variable = Variable(statement.name, VariantValue(0.0))
+        // Construct variable
+        val variable = Variable(localName, VariantValue(0.0))
         val variableId = UUID.randomUUID().toString()
 
-        val current = this.currentSprite
-        if (current == null) {
-            // We are in the global scope (stage)
-            this.stage.variables[variableId] = variable
-        }
+        // Add to representation
+        val current = this.currentSprite ?: this.stage
+        current.variables[variableId] = variable
 
-        TODO()
+        // Add to scope
+        currentScopes.peek()[statement.name] = variableId
     }
 
     override fun visit(statement: WhenStatement) {
@@ -203,6 +291,10 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     private fun addSerialBlock(block: Block) {
+        if (this.hasScopeEnded) {
+            TODO("Scope has finished, please don't add more")
+        }
+
         val target = this.currentSprite ?: this.stage
         target.blocks[block.id] = block
 
