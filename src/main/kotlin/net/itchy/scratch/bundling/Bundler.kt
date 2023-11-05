@@ -25,7 +25,7 @@ private val gson = GsonBuilder()
     .create()
 
 fun bundle(name: String, representation: ScratchProject, outPath: String) {
-    ZipFile("$outPath${File.pathSeparatorChar}$name").use { zip ->
+    ZipFile("$outPath\\$name.sb3").use { zip ->
         for (target in representation.targets) {
             for (costume in target.costumes) {
                 val parameters = ZipParameters().apply {
@@ -38,7 +38,7 @@ fun bundle(name: String, representation: ScratchProject, outPath: String) {
         val parameters = ZipParameters().apply {
             fileNameInZip = "project.json"
         }
-        zip.addFile(gson.toJson(representation), parameters)
+        zip.addStream(gson.toJson(representation).byteInputStream(), parameters)
         zip.close()
     }
 }

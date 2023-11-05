@@ -1,3 +1,6 @@
+# scratch
+.sb3
+
 # gradle
 
 .gradle/
@@ -24,3 +27,4 @@ bin/
 # obsidian
 
 .obsidian/
+/SaySum.sb3
