@@ -249,15 +249,15 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             val location = expression.arguments[1] as StringLiteralExpression
             val costume = loadCostume(name.literal, location.literal)
             this.currentSprite?.costumes?.add(costume)
+            return
         }
-
         if (expression.name == "load_backdrop") {
             val name = expression.arguments[0] as StringLiteralExpression
             val location = expression.arguments[1] as StringLiteralExpression
             val costume = loadCostume(name.literal, location.literal, 480, 360)
             this.stage.costumes.add(costume)
+            return
         }
-
         if (expression.name == "say") {
             val block = Block(
                 id = statement.id,
@@ -268,9 +268,32 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                 )
             )
             this.addSerialBlock(block, statement.position)
-        } else {
-            expression.visit(this)
+            return
         }
+        if (expression.name == "broadcast")
+        {
+            val broadcastID = UUID.randomUUID().toString()
+            val broadcastName = (expression.arguments[0] as StringLiteralExpression).literal
+
+            // Add broadcast to stages broadcasts map
+            stage.broadcasts[broadcastID] = broadcastName
+
+            val broadcastBlock = Block(
+                id = statement.id,
+                opcode = "event_broadcast",
+                topLevel = false,
+                inputs = hashMapOf("BROADCAST_INPUT" to Input(
+                    shadowState = 1,
+                    actualInput = Either.right(InputSpec(11, VariantValue(broadcastName), broadcastID)),
+                    obscuredShadow = null
+                ))
+            )
+
+            this.addSerialBlock(broadcastBlock, statement.position)
+            return
+        }
+
+        expression.visit(this)
     }
 
     override fun visit(statement: FunctionStatement) {
@@ -577,6 +600,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     override fun visit(statement: WhenStatement) {
         val opcode = when (statement.event) {
             "init" -> "event_whenflagclicked"
+            "received" -> "event_whenbroadcastreceived"
             else -> TODO("Other when statement opcodes")
         }
         val whenBlock = Block(
@@ -585,6 +609,18 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             parent = null,
             topLevel = true,
         )
+
+        // Add broadcast field
+        if (statement.event == "received")
+        {
+            statement.eventArgument?:throw CompileException(statement.position, "When received must specify a broadcast")
+            val broadcastName = statement.eventArgument.removePrefix("\"").removeSuffix("\"")
+            whenBlock.fields["BROADCAST_OPTION"] = Field(
+                value = VariantValue(broadcastName),
+                id = getBroadcastId(broadcastName, statement.position)
+            )
+        }
+
         this.addSerialBlock(whenBlock, statement.position)
         this.visitStatements(statement.statements)
     }
@@ -654,5 +690,14 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             }
         }
         throw IllegalStateException()
+    }
+
+    private fun getBroadcastId(desiredName : String, position: TokenPosition) : String
+    {
+        for ((id, name) in stage.broadcasts)
+        {
+            if (name == desiredName) return id
+        }
+        throw CompileException(position, "Undefined broadcast")
     }
 }
