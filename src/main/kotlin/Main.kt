@@ -12,27 +12,11 @@ sprite X
 	{
 		load_costume("abby-a", "./abby-a.svg")
 		load_backdrop("backdrop", "./backdrop.svg")
-		
-		let n : double = 2
-		loop forever
-		{
-			let isPrime : boolean = true
-			let fac : double = 2
-			
-			loop until (fac == n)
-			{
-				if (n % fac == 0)
-				{
-					isPrime = false	
-				}
-				fac += 1
-			}
-
-			if (isPrime) { say(n) }
-			
-			n += 1
-		}
 	}
+
+    func foo_bar(a: string, b: string, c: string, d: boolean) {
+        return a + b + c
+    }
 }
         """.trimIndent()
 

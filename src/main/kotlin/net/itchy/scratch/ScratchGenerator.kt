@@ -2,6 +2,7 @@ package net.itchy.scratch
 
 import net.itchy.ast.ExpressionVisitor
 import net.itchy.ast.StatementVisitor
+import net.itchy.ast.data.ItchyType
 import net.itchy.ast.expressions.*
 import net.itchy.ast.statements.*
 import net.itchy.compiler.CompileException
@@ -14,6 +15,7 @@ import net.itchy.utils.VariantValue
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
@@ -211,14 +213,66 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: FunctionStatement) {
-        TODO("Not yet implemented")
+        val inputs = HashMap<String, Input>()
+        val argumentIds = ArrayList<String>()
+        // Construct Function Prototype
+        val funcProtoBlock = Block(
+            id = UUID.randomUUID().toString(),
+            opcode = "procedures_prototype",
+            topLevel = false,
+            inputs = inputs,
+            shadow = true,
+            mutation = ProcedureMutation(
+                procCode = "${statement.name} ${statement.parameters.joinToString(" ") { if (it.type == ItchyType.BOOLEAN) "%b" else "%s" }}",
+                argumentIds = argumentIds,
+                argumentNames = statement.parameters.map { it.name },
+                warp = statement.fast
+            )
+        )
+
+        for (parameter in statement.parameters) {
+            val paramBlock = Block(
+                id = UUID.randomUUID().toString(),
+                opcode = "argument_reporter_" + if (parameter.type == ItchyType.BOOLEAN) "boolean" else "string_number",
+                fields = hashMapOf(
+                    "VALUE" to Field(VariantValue(parameter.name), null)
+                ),
+                shadow = true,
+                topLevel = false
+            )
+            val newId = UUID.randomUUID().toString()
+            argumentIds.add(newId)
+            inputs[newId] = Input(1, Either.left(paramBlock.id), null)
+            this.addNestedBlock(paramBlock, funcProtoBlock.id)
+
+        }
+
+        this.addNestedBlock(funcProtoBlock, statement.id)
+
+        // Construct Function Definition
+        val funcDefBlock = Block(
+            id = statement.id,
+            opcode = "procedures_definition",
+            topLevel = true,
+            inputs = mapOf(
+                "custom_block" to Input(
+                    shadowState = 1,
+                    actualInput = Either.left(funcProtoBlock.id),
+                    obscuredShadow = null
+                )
+            )
+        )
+        this.lastBlock = null
+        this.addSerialBlock(funcDefBlock, statement.position)
+
+        this.visitStatements(statement.statements)
     }
 
     override fun visit(statement: IfStatement) {
-        val subStack1 = if (statement.ifStatements.isNotEmpty()) {
+        val subStack1 = if (willGenerateBlocks(statement.ifStatements)) {
             Input(
                 shadowState = 2,
-                actualInput = Either.left(statement.ifStatements.first().id),
+                actualInput = Either.left(findFirstBlock(statement.ifStatements)),
                 obscuredShadow = null
             )
         } else {
@@ -228,10 +282,10 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                 obscuredShadow = null
             )
         }
-        val subStack2 = if (statement.elseStatements.isNotEmpty()) {
+        val subStack2 = if (willGenerateBlocks(statement.elseStatements)) {
             Input(
                 shadowState = 2,
-                actualInput = Either.left(statement.elseStatements.first().id),
+                actualInput = Either.left(findFirstBlock(statement.elseStatements)),
                 obscuredShadow = null
             )
         } else {
@@ -368,7 +422,31 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     }
 
     override fun visit(statement: ReturnStatement) {
-        TODO("Not yet implemented")
+        val appendBlock = Block(
+            id = statement.id,
+            opcode = "data_addtolist",
+            inputs = mapOf(
+                "ITEM" to statement.returnExpression.visit(this)
+                    .copy(shadowState = 1, obscuredShadow = Either.right(InputSpec()))
+            ),
+            fields = hashMapOf(
+                "LIST" to Field(VariantValue("returns"), "wellsmuir")
+            ),
+            topLevel = false
+        )
+        this.addSerialBlock(appendBlock, statement.position)
+
+        val stopBlock = Block(
+            id = UUID.randomUUID().toString(),
+            opcode = "control_stop",
+            topLevel = false,
+            fields = hashMapOf(
+                "STOP_OPTION" to Field(VariantValue("this script"), null)
+            ),
+            mutation = StopMutation(false)
+        )
+        this.addSerialBlock(stopBlock, statement.position)
+        this.hasScopeEnded = true
     }
 
     override fun visit(statement: SpriteStatement) {

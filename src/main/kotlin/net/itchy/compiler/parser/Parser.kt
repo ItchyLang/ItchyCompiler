@@ -80,7 +80,7 @@ class Parser(tokens: List<Token>) {
             this.identifierToType(this.reader.mustMatch(IDENTIFIER))
         } else ItchyType.VOID
 
-        return FunctionStatement(id.content, fast, type, parameters, this.statements())
+        return FunctionStatement(id.content, fast, type, parameters, this.statements(), id.position)
     }
 
     private fun letDeclaration(): List<Statement> {
@@ -122,6 +122,7 @@ class Parser(tokens: List<Token>) {
             LET -> this.letDeclaration()
             IF -> listOf(this.ifStatement())
             LOOP -> listOf(this.loopStatement())
+            RETURN -> listOf(this.returnStatement())
             else -> listOf(this.expressionStatement())
         }
     }
@@ -151,6 +152,11 @@ class Parser(tokens: List<Token>) {
             this.reader.isMatch(UNTIL) -> LoopUntilStatement(this.expression(), this.statements(), position)
             else -> throw CompileException(this.reader.position(), "Loop must be followed by 'forever', 'count', or 'until'")
         }
+    }
+
+    private fun returnStatement(): Statement {
+        val position = this.reader.mustMatch(RETURN).position
+        return ReturnStatement(this.expression(), position)
     }
 
     private fun expressionStatement(): Statement {

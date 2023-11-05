@@ -1,5 +1,6 @@
 package net.itchy.scratch.representation
 
+import com.google.gson.annotations.SerializedName
 import net.itchy.scratch.representation.Mutation
 
 data class ProcedureMutation(
@@ -7,5 +8,5 @@ data class ProcedureMutation(
     val procCode : String,
     val argumentIds : ArrayList<String>,
     val warp : Boolean,
-    val argumentNames : ArrayList<String>?
+    val argumentNames : List<String>
 ) : Mutation()
