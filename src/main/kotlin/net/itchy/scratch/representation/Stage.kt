@@ -1,24 +1,15 @@
 package net.itchy.scratch.representation
 
-data class Stage
-(
-    override val costumes: ArrayList<Costume> = ArrayList(),
-
-    override val variables: HashMap<String, Variable> = HashMap(),
-    override val blocks: HashMap<String, Block> = HashMap(),
-    override val broadcasts: HashMap<String, String> = HashMap(),
-    override val sounds: ArrayList<Sound> = arrayListOf(),
-) : Target()
-{
-    // Completely forced
+class Stage: Target() {
+    // Defaults for all stages
     override val isStage: Boolean = true
     override val name: String = "Stage"
-    val textToSpeechLanguage : String? = null
-    val tempo : Int = 60
-    val videoState : String = "off"
-    val videoTransparency : Int = 50
     override val layerOrder: Int = 0
-    override val currentCostume: Int = 0
-    override val volume: Int = 100
-    override val lists: HashMap<String, ScratchList> = hashMapOf("wellsmuir" to ScratchList("returns"))
+    override val lists = mapOf("wellsmuir" to ScratchList("returns"))
+
+    // Stage specific fields (extensions... unused)
+    val textToSpeechLanguage = null
+    val tempo = 60
+    val videoState = "off"
+    val videoTransparency = 50
 }

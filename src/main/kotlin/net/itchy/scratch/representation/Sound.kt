@@ -1,6 +1,6 @@
 package net.itchy.scratch.representation
 
-class Sound
-{
+// TODO: Implement sounds
+class Sound {
 
 }

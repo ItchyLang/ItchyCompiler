@@ -30,6 +30,8 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     private var functionScope: HashMap<String, List<Pair<String, Boolean>>> = HashMap()
 
     private var lastBlock: Block? = null
+    // TODO: make a proper fix for this
+    private var lastBlockMod: ((String) -> Unit)? = null
 
     private var hasScopeEnded = false
 
@@ -94,8 +96,6 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         val block = Block(
             id = expression.id,
             opcode = opcode,
-            parent = expression.parent.id,
-            next = null,
             topLevel = false,
             inputs = mapOf(
                 "${parameterName}1" to left,
@@ -103,11 +103,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             )
         )
         this.addNestedBlock(block, expression.parent.id)
-        return Input(
-            shadowState = 3,
-            actualInput = Either(block.id),
-            obscuredShadow = Either(InputSpec(4, Either(0.0)))
-        )
+        return Input.block(block.id)
     }
 
     override fun visit(expression: BooleanLiteralExpression): Input {
@@ -134,8 +130,11 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
 
             val inputs = HashMap<String, Input>()
             for ((i, pair) in data.withIndex()) {
-                inputs[pair.first] = expression.arguments[i].visit(this)
-                    .copy(shadowState = if (pair.second) 2 else 1)
+                var input = expression.arguments[i].visit(this)
+                if (pair.second) {
+                    input = input.withoutShadow()
+                }
+                inputs[pair.first] = input
             }
 
             val callBlock = Block(
@@ -152,12 +151,9 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             )
             this.addSerialBlock(callBlock, expression.position)
         } else {
-            return Input(
-                shadowState = 1,
-                actualInput = Either(InputSpec(4, Either(0.0), null)),
-                obscuredShadow = null
-            )
-            TODO("Not yet implemented")
+            // TODO: Handle built-in functions
+            println("Function did not exist... Suppressing error...")
+            return Input.number(0.0)
         }
 
         val lengthOfList = Block(
@@ -173,11 +169,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             opcode = "data_itemoflist",
             topLevel = false,
             inputs = mapOf(
-                "INDEX" to Input(
-                    3,
-                    Either(lengthOfList.id),
-                    Either(InputSpec())
-                )
+                "INDEX" to Input.block(lengthOfList.id)
             ),
             fields = hashMapOf(
                 "LIST" to Field(Either("returns"), "wellsmuir")
@@ -186,27 +178,15 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         this.addNestedBlock(lengthOfList, dataInList.id)
         this.addNestedBlock(dataInList, expression.parent.id)
 
-        return Input(
-            shadowState = 3,
-            actualInput = Either(dataInList.id),
-            obscuredShadow = Either(InputSpec())
-        )
+        return Input.block(dataInList.id)
     }
 
     override fun visit(expression: NumberLiteralExpression): Input {
-        return Input(
-            shadowState = 1,
-            actualInput = Either(InputSpec(4, Either(expression.number), null)),
-            obscuredShadow = null
-        )
+        return Input.number(expression.number)
     }
 
     override fun visit(expression: StringLiteralExpression): Input {
-        return Input(
-            shadowState = 1,
-            actualInput = Either(InputSpec(10, Either(expression.literal), null)),
-            obscuredShadow = null
-        )
+        return Input.string(expression.literal)
     }
 
     override fun visit(expression: UnaryOperationExpression): Input {
@@ -242,11 +222,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                 topLevel = false
             )
             this.addNestedBlock(xPositionBlock, expression.parent.id)
-            return Input(
-                shadowState = 3,
-                actualInput = Either(xPositionBlock.id),
-                obscuredShadow = Either(InputSpec())
-            )
+            return Input.block(xPositionBlock.id)
         }
         if (expression.name == "y_position") {
             val yPositionBlock = Block(
@@ -255,11 +231,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                 topLevel = false
             )
             this.addNestedBlock(yPositionBlock, expression.parent.id)
-            return Input(
-                shadowState = 3,
-                actualInput = Either(yPositionBlock.id),
-                obscuredShadow = Either(InputSpec())
-            )
+            return Input.block(yPositionBlock.id)
         }
 
         val scope = this.functionParameterScope
@@ -276,21 +248,13 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                     topLevel = false
                 )
                 this.addNestedBlock(reporterBlock, expression.parent.id)
-                return Input(
-                    shadowState = 3,
-                    actualInput = Either(reporterBlock.id),
-                    obscuredShadow = Either(InputSpec())
-                )
+                return Input.block(reporterBlock.id)
             }
         }
 
         val (id, localName) = getVariableId(expression.name, expression.position)
 
-        return Input(
-            shadowState = 3,
-            actualInput = Either(InputSpec(12, Either(localName), id)),
-            obscuredShadow = Either(InputSpec())
-        )
+        return Input.variable(localName, id)
     }
 
     override fun visit(statement: FunctionCallStatement) {
@@ -332,11 +296,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                 id = statement.id,
                 opcode = "event_broadcast",
                 topLevel = false,
-                inputs = hashMapOf("BROADCAST_INPUT" to Input(
-                    shadowState = 1,
-                    actualInput = Either(InputSpec(11, Either(broadcastName), broadcastID)),
-                    obscuredShadow = null
-                ))
+                inputs = hashMapOf("BROADCAST_INPUT" to Input.broadcast(broadcastName, broadcastID))
             )
 
             this.addSerialBlock(broadcastBlock, statement.position)
@@ -395,7 +355,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             )
             val newId = UUID.randomUUID().toString()
             argumentIds.add(newId)
-            inputs[newId] = Input(1, Either(paramBlock.id), null)
+            inputs[newId] = Input.substack(paramBlock.id)
             this.addNestedBlock(paramBlock, funcProtoBlock.id)
             scope[parameter.name] = paramBlock.id to (parameter.type == ItchyType.BOOLEAN)
             paramData.add(newId to (parameter.type == ItchyType.BOOLEAN))
@@ -409,11 +369,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             opcode = "procedures_definition",
             topLevel = true,
             inputs = mapOf(
-                "custom_block" to Input(
-                    shadowState = 1,
-                    actualInput = Either(funcProtoBlock.id),
-                    obscuredShadow = null
-                )
+                "custom_block" to Input.substack(funcProtoBlock.id)
             )
         )
         this.lastBlock = null
@@ -425,30 +381,15 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
 
     override fun visit(statement: IfStatement) {
         val subStack1 = if (willGenerateBlocks(statement.ifStatements)) {
-            Input(
-                shadowState = 2,
-                actualInput = Either(findFirstBlock(statement.ifStatements)),
-                obscuredShadow = null
-            )
+            // TODO: Use substack?
+            Input.block(findFirstBlock(statement.ifStatements))
         } else {
-            Input(
-                shadowState = 1,
-                actualInput = null,
-                obscuredShadow = null
-            )
+            Input.nothing()
         }
         val subStack2 = if (willGenerateBlocks(statement.elseStatements)) {
-            Input(
-                shadowState = 2,
-                actualInput = Either(findFirstBlock(statement.elseStatements)),
-                obscuredShadow = null
-            )
+            Input.block(findFirstBlock(statement.elseStatements))
         } else {
-            Input(
-                shadowState = 1,
-                actualInput = null,
-                obscuredShadow = null
-            )
+            Input.nothing()
         }
 
         val previous = statement.condition.parent
@@ -459,21 +400,31 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         )
         condition.parent = previous
 
+        val inputs = hashMapOf(
+            "CONDITION" to condition.visit(this).withoutShadow(),
+            "SUBSTACK" to subStack1,
+            "SUBSTACK2" to subStack2
+        )
+
         val ifBlock = Block(
             id = statement.id,
             topLevel = false,
             opcode = "control_if_else",
-            inputs = mapOf(
-                "CONDITION" to condition.visit(this).copy(shadowState = 2, obscuredShadow = null),
-                "SUBSTACK" to subStack1,
-                "SUBSTACK2" to subStack2
-            )
+            inputs = inputs
         )
         this.addSerialBlock(ifBlock, statement.position)
 
+        this.lastBlockMod = {
+            inputs["SUBSTACK"] = Input.block(it)
+        }
         this.visitStatements(statement.ifStatements)
         this.lastBlock = ifBlock
+
+        this.lastBlockMod = {
+            inputs["SUBSTACK2"] = Input.block(it)
+        }
         this.visitStatements(statement.elseStatements)
+        this.lastBlockMod = null
         this.lastBlock = ifBlock
         ifBlock.next = null
     }
@@ -484,11 +435,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         inputs["TIMES"] = statement.count.visit(this)
         if (willGenerateBlocks(statement.statements))
         {
-            inputs["SUBSTACK"] = Input(
-                shadowState = 2,
-                actualInput = Either(findFirstBlock(statement.statements)),
-                obscuredShadow = null
-            )
+            inputs["SUBSTACK"] = Input.block(findFirstBlock(statement.statements))
         }
 
         // Construct block
@@ -502,8 +449,12 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         // Add block to representation and update references
         this.addSerialBlock(loopBlock, statement.position)
 
+        this.lastBlockMod = {
+            inputs["SUBSTACK"] = Input.block(it)
+        }
         this.visitStatements(statement.statements)
         this.lastBlock = loopBlock
+        this.lastBlockMod = null
         loopBlock.next = null
     }
 
@@ -514,11 +465,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         }
         else
         {
-            hashMapOf("SUBSTACK" to Input(
-                shadowState = 2,
-                actualInput = Either(findFirstBlock(statement.statements)),
-                obscuredShadow = null
-            ))
+            hashMapOf("SUBSTACK" to Input.block(findFirstBlock(statement.statements)))
         }
 
         // Construct block
@@ -532,9 +479,13 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         // Add block to representation and update references
         this.addSerialBlock(loopBlock, statement.position)
 
+        this.lastBlockMod = {
+            inputs["SUBSTACK"] = Input.block(it)
+        }
         this.visitStatements(statement.statements)
         this.hasScopeEnded = true
         this.lastBlock = null
+        this.lastBlockMod = null
         loopBlock.next = null
     }
 
@@ -552,11 +503,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         inputs["CONDITION"] = condition.visit(this)
         if (willGenerateBlocks(statement.statements))
         {
-            inputs["SUBSTACK"] = Input(
-                shadowState = 2,
-                actualInput = Either(findFirstBlock(statement.statements)),
-                obscuredShadow = null
-            )
+            inputs["SUBSTACK"] = Input.block(findFirstBlock(statement.statements))
         }
 
         // Construct block
@@ -570,8 +517,12 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         // Add block to representation and update references
         this.addSerialBlock(loopBlock, statement.position)
 
+        this.lastBlockMod = {
+            inputs["SUBSTACK"] = Input.block(it)
+        }
         this.visitStatements(statement.statements)
         this.lastBlock = loopBlock
+        this.lastBlockMod = null
         loopBlock.next = null
     }
 
@@ -581,7 +532,6 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             opcode = "data_addtolist",
             inputs = mapOf(
                 "ITEM" to statement.returnExpression.visit(this)
-                    .copy(shadowState = 1, obscuredShadow = Either(InputSpec()))
             ),
             fields = hashMapOf(
                 "LIST" to Field(Either("returns"), "wellsmuir")
@@ -666,10 +616,11 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             "received" -> "event_whenbroadcastreceived"
             else -> TODO("Other when statement opcodes")
         }
+        val fields = HashMap<String, Field>()
         val whenBlock = Block(
             id = statement.id,
             opcode = opcode,
-            parent = null,
+            fields = fields,
             topLevel = true,
         )
 
@@ -678,7 +629,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         {
             statement.eventArgument?:throw CompileException(statement.position, "When received must specify a broadcast")
             val broadcastName = statement.eventArgument.removePrefix("\"").removeSuffix("\"")
-            whenBlock.fields["BROADCAST_OPTION"] = Field(
+            fields["BROADCAST_OPTION"] = Field(
                 value = Either(broadcastName),
                 id = getBroadcastId(broadcastName, statement.position)
             )
@@ -710,6 +661,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         val lastBlock = this.lastBlock
         block.parent = lastBlock?.id
         if (lastBlock != null) {
+            lastBlockMod?.invoke(block.id)
             lastBlock.next = block.id
         }
         this.lastBlock = block

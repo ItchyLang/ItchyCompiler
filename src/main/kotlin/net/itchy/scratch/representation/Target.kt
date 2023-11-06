@@ -1,19 +1,20 @@
 package net.itchy.scratch.representation
 
-abstract class Target
-{
-    abstract val isStage : Boolean
-    abstract val name : String
-    abstract val variables : HashMap<String, Variable>
-    abstract val broadcasts : HashMap<String, String>
-    abstract val blocks : HashMap<String, Block>
-    abstract val currentCostume : Int
-    abstract val costumes : ArrayList<Costume>
-    abstract val sounds : ArrayList<Sound>
-    abstract val layerOrder : Int
-    abstract val volume : Int
-    abstract val lists : HashMap<String, ScratchList>
+sealed class Target {
+    abstract val isStage: Boolean
+    abstract val name: String
+    abstract val layerOrder: Int
+    abstract val lists: Map<String, ScratchList>
 
-    // Completely forced
-    val comments : HashMap<Int, Int> = HashMap()
+    // These must be mutable we add to these later
+    val costumes: MutableList<Costume> = ArrayList()
+    val sounds: MutableList<Sound> = ArrayList()
+    val variables: MutableMap<String, Variable> = HashMap()
+    val broadcasts: MutableMap<String, String> = HashMap()
+    val blocks: MutableMap<String, Block> = HashMap()
+
+    // We do not add comments
+    val comments: Map<Nothing, Nothing> = mapOf()
+    val currentCostume = 0
+    val volume = 100
 }

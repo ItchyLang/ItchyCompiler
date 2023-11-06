@@ -1,5 +1,5 @@
 # scratch
-.sb3
+*.sb3
 
 # gradle
 
@@ -27,4 +27,3 @@ bin/
 # obsidian
 
 .obsidian/
-/SaySum.sb3

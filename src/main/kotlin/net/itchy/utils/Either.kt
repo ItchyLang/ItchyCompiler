@@ -1,13 +1,12 @@
 package net.itchy.utils
 
 import java.lang.IllegalArgumentException
-import kotlin.math.E
 
 /**
  * Utility class for returning either one of two types.
  *
  * This is better than type casting with [Any] because the user can
- * be absolutely sure that it is one of 2 types.
+ * be sure that it is one of two types.
  *
  * It is not possible to not have either value, one must be present and not null.
  *
@@ -118,6 +117,14 @@ class Either<A: Any, B: Any> private constructor(
     }
 }
 
+/**
+ * This method creates an [Either] from a value.
+ *
+ * @param value The value to create the [Either] from.
+ * @param A The left type.
+ * @param B The right type.
+ * @return The [Either].
+ */
 inline fun <reified A: Any, reified B: Any> Either(value: Any): Either<A, B> {
     return when (value) {
         is A -> Either.left(value)

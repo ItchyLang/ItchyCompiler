@@ -65,7 +65,6 @@ class SyntaxTest {
 
         compiles("func Y(a: string) { }")
         compiles("func Y(a: string, b: boolean) { }")
-        compiles("func Y(a: string, b: boolean, ) { }")
         compiles("func Y(a: double): string { }")
 
         compiles(

@@ -10,9 +10,8 @@ import java.io.File
 
 // Setup GSON
 private val gson = GsonBuilder()
-    .registerTypeAdapter(VariantValue::class.java, VariantValueAdaptor())
     .registerTypeAdapter(Either::class.java, EitherAdaptor())
-    .registerTypeAdapter(InputSpec::class.java, InputSpecAdaptor())
+    .registerTypeAdapter(InputGenerator::class.java, InputSpecAdaptor())
     .registerTypeAdapter(Input::class.java, InputAdaptor())
     .registerTypeAdapter(Field::class.java, FieldAdaptor())
     .registerTypeAdapter(Variable::class.java, VariableAdaptor())

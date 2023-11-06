@@ -1,11 +1,9 @@
 package net.itchy.scratch.serialization
 
-import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonSerializationContext
 import com.google.gson.JsonSerializer
-import net.itchy.scratch.representation.InputSpec
 import net.itchy.scratch.representation.ProcedureMutation
 import java.lang.reflect.Type
 

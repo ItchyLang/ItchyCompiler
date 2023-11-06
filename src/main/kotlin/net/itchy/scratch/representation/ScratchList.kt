@@ -1,9 +1,7 @@
 package net.itchy.scratch.representation
 
-data class ScratchList
-(
+data class ScratchList(
     val name : String
-)
-{
-    val value : ArrayList<Int> = arrayListOf()
+) {
+    val value: List<Nothing> = listOf()
 }
