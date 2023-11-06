@@ -11,7 +11,6 @@ import net.itchy.compiler.token.TokenType
 import net.itchy.scratch.assets.loadCostume
 import net.itchy.scratch.representation.*
 import net.itchy.utils.Either
-import net.itchy.utils.VariantValue
 import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 import java.util.*
@@ -106,8 +105,8 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         this.addNestedBlock(block, expression.parent.id)
         return Input(
             shadowState = 3,
-            actualInput = Either.left(block.id),
-            obscuredShadow = Either.right(InputSpec(4, VariantValue(0.0)))
+            actualInput = Either(block.id),
+            obscuredShadow = Either(InputSpec(4, Either(0.0)))
         )
     }
 
@@ -155,18 +154,18 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         } else {
             return Input(
                 shadowState = 1,
-                actualInput = Either.right(InputSpec(4, VariantValue(0.0), null)),
+                actualInput = Either(InputSpec(4, Either(0.0), null)),
                 obscuredShadow = null
             )
             TODO("Not yet implemented")
         }
 
-        val lengthOflist = Block(
+        val lengthOfList = Block(
             id = UUID.randomUUID().toString(),
             opcode = "data_lengthoflist",
             topLevel = false,
             fields = hashMapOf(
-                "LIST" to Field(VariantValue("returns"), "wellsmuir")
+                "LIST" to Field(Either("returns"), "wellsmuir")
             )
         )
         val dataInList = Block(
@@ -176,28 +175,28 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             inputs = mapOf(
                 "INDEX" to Input(
                     3,
-                    Either.left(lengthOflist.id),
-                    Either.right(InputSpec())
+                    Either(lengthOfList.id),
+                    Either(InputSpec())
                 )
             ),
             fields = hashMapOf(
-                "LIST" to Field(VariantValue("returns"), "wellsmuir")
+                "LIST" to Field(Either("returns"), "wellsmuir")
             )
         )
-        this.addNestedBlock(lengthOflist, dataInList.id)
+        this.addNestedBlock(lengthOfList, dataInList.id)
         this.addNestedBlock(dataInList, expression.parent.id)
 
         return Input(
             shadowState = 3,
-            actualInput = Either.left(dataInList.id),
-            obscuredShadow = Either.right(InputSpec())
+            actualInput = Either(dataInList.id),
+            obscuredShadow = Either(InputSpec())
         )
     }
 
     override fun visit(expression: NumberLiteralExpression): Input {
         return Input(
             shadowState = 1,
-            actualInput = Either.right(InputSpec(4, VariantValue(expression.number), null)),
+            actualInput = Either(InputSpec(4, Either(expression.number), null)),
             obscuredShadow = null
         )
     }
@@ -205,7 +204,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
     override fun visit(expression: StringLiteralExpression): Input {
         return Input(
             shadowState = 1,
-            actualInput = Either.right(InputSpec(10, VariantValue(expression.literal), null)),
+            actualInput = Either(InputSpec(10, Either(expression.literal), null)),
             obscuredShadow = null
         )
     }
@@ -245,8 +244,8 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             this.addNestedBlock(xPositionBlock, expression.parent.id)
             return Input(
                 shadowState = 3,
-                actualInput = Either.left(xPositionBlock.id),
-                obscuredShadow = Either.right(InputSpec())
+                actualInput = Either(xPositionBlock.id),
+                obscuredShadow = Either(InputSpec())
             )
         }
         if (expression.name == "y_position") {
@@ -258,8 +257,8 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             this.addNestedBlock(yPositionBlock, expression.parent.id)
             return Input(
                 shadowState = 3,
-                actualInput = Either.left(yPositionBlock.id),
-                obscuredShadow = Either.right(InputSpec())
+                actualInput = Either(yPositionBlock.id),
+                obscuredShadow = Either(InputSpec())
             )
         }
 
@@ -272,15 +271,15 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                     id = UUID.randomUUID().toString(),
                     opcode = "argument_reporter_" + if (isBoolean) "boolean" else "string_number",
                     fields = hashMapOf(
-                        "VALUE" to Field(VariantValue(expression.name), null)
+                        "VALUE" to Field(Either(expression.name), null)
                     ),
                     topLevel = false
                 )
                 this.addNestedBlock(reporterBlock, expression.parent.id)
                 return Input(
                     shadowState = 3,
-                    actualInput = Either.left(reporterBlock.id),
-                    obscuredShadow = Either.right(InputSpec())
+                    actualInput = Either(reporterBlock.id),
+                    obscuredShadow = Either(InputSpec())
                 )
             }
         }
@@ -289,8 +288,8 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
 
         return Input(
             shadowState = 3,
-            actualInput = Either.right(InputSpec(12, VariantValue(localName), id)),
-            obscuredShadow = Either.right(InputSpec())
+            actualInput = Either(InputSpec(12, Either(localName), id)),
+            obscuredShadow = Either(InputSpec())
         )
     }
 
@@ -335,7 +334,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                 topLevel = false,
                 inputs = hashMapOf("BROADCAST_INPUT" to Input(
                     shadowState = 1,
-                    actualInput = Either.right(InputSpec(11, VariantValue(broadcastName), broadcastID)),
+                    actualInput = Either(InputSpec(11, Either(broadcastName), broadcastID)),
                     obscuredShadow = null
                 ))
             )
@@ -345,7 +344,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         }
         if (expression.name == "go_to")
         {
-            var block = Block(
+            val block = Block(
                 id = statement.id,
                 opcode = "motion_gotoxy",
                 topLevel = false,
@@ -389,14 +388,14 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
                 id = UUID.randomUUID().toString(),
                 opcode = "argument_reporter_" + if (parameter.type == ItchyType.BOOLEAN) "boolean" else "string_number",
                 fields = hashMapOf(
-                    "VALUE" to Field(VariantValue(parameter.name), null)
+                    "VALUE" to Field(Either(parameter.name), null)
                 ),
                 shadow = true,
                 topLevel = false
             )
             val newId = UUID.randomUUID().toString()
             argumentIds.add(newId)
-            inputs[newId] = Input(1, Either.left(paramBlock.id), null)
+            inputs[newId] = Input(1, Either(paramBlock.id), null)
             this.addNestedBlock(paramBlock, funcProtoBlock.id)
             scope[parameter.name] = paramBlock.id to (parameter.type == ItchyType.BOOLEAN)
             paramData.add(newId to (parameter.type == ItchyType.BOOLEAN))
@@ -412,7 +411,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             inputs = mapOf(
                 "custom_block" to Input(
                     shadowState = 1,
-                    actualInput = Either.left(funcProtoBlock.id),
+                    actualInput = Either(funcProtoBlock.id),
                     obscuredShadow = null
                 )
             )
@@ -428,7 +427,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         val subStack1 = if (willGenerateBlocks(statement.ifStatements)) {
             Input(
                 shadowState = 2,
-                actualInput = Either.left(findFirstBlock(statement.ifStatements)),
+                actualInput = Either(findFirstBlock(statement.ifStatements)),
                 obscuredShadow = null
             )
         } else {
@@ -441,7 +440,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         val subStack2 = if (willGenerateBlocks(statement.elseStatements)) {
             Input(
                 shadowState = 2,
-                actualInput = Either.left(findFirstBlock(statement.elseStatements)),
+                actualInput = Either(findFirstBlock(statement.elseStatements)),
                 obscuredShadow = null
             )
         } else {
@@ -487,7 +486,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         {
             inputs["SUBSTACK"] = Input(
                 shadowState = 2,
-                actualInput = Either.left(findFirstBlock(statement.statements)),
+                actualInput = Either(findFirstBlock(statement.statements)),
                 obscuredShadow = null
             )
         }
@@ -517,7 +516,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         {
             hashMapOf("SUBSTACK" to Input(
                 shadowState = 2,
-                actualInput = Either.left(findFirstBlock(statement.statements)),
+                actualInput = Either(findFirstBlock(statement.statements)),
                 obscuredShadow = null
             ))
         }
@@ -555,7 +554,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         {
             inputs["SUBSTACK"] = Input(
                 shadowState = 2,
-                actualInput = Either.left(findFirstBlock(statement.statements)),
+                actualInput = Either(findFirstBlock(statement.statements)),
                 obscuredShadow = null
             )
         }
@@ -582,10 +581,10 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             opcode = "data_addtolist",
             inputs = mapOf(
                 "ITEM" to statement.returnExpression.visit(this)
-                    .copy(shadowState = 1, obscuredShadow = Either.right(InputSpec()))
+                    .copy(shadowState = 1, obscuredShadow = Either(InputSpec()))
             ),
             fields = hashMapOf(
-                "LIST" to Field(VariantValue("returns"), "wellsmuir")
+                "LIST" to Field(Either("returns"), "wellsmuir")
             ),
             topLevel = false
         )
@@ -596,7 +595,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             opcode = "control_stop",
             topLevel = false,
             fields = hashMapOf(
-                "STOP_OPTION" to Field(VariantValue("this script"), null)
+                "STOP_OPTION" to Field(Either("this script"), null)
             ),
             mutation = StopMutation(false)
         )
@@ -638,7 +637,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             id = statement.id,
             opcode = "data_setvariableto",
             topLevel = false,
-            fields = hashMapOf("VARIABLE" to Field(VariantValue(localName), id)),
+            fields = hashMapOf("VARIABLE" to Field(Either(localName), id)),
             inputs = hashMapOf("VALUE" to statement.assignee.visit(this)),
         )
 
@@ -650,7 +649,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         val localName = "${statement.name}${System.identityHashCode(currentScopes.peek())}"
 
         // Construct variable
-        val variable = Variable(localName, VariantValue(0.0))
+        val variable = Variable(localName, Either(0.0))
         val variableId = UUID.randomUUID().toString()
 
         // Add to representation
@@ -680,7 +679,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
             statement.eventArgument?:throw CompileException(statement.position, "When received must specify a broadcast")
             val broadcastName = statement.eventArgument.removePrefix("\"").removeSuffix("\"")
             whenBlock.fields["BROADCAST_OPTION"] = Field(
-                value = VariantValue(broadcastName),
+                value = Either(broadcastName),
                 id = getBroadcastId(broadcastName, statement.position)
             )
         }

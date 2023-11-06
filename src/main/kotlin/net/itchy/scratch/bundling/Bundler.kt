@@ -4,7 +4,6 @@ import com.google.gson.GsonBuilder
 import net.itchy.scratch.representation.*
 import net.itchy.scratch.serialization.*
 import net.itchy.utils.Either
-import net.itchy.utils.VariantValue
 import net.lingala.zip4j.ZipFile
 import net.lingala.zip4j.model.ZipParameters
 import java.io.File

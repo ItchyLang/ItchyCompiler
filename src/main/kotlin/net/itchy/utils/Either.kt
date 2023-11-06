@@ -1,5 +1,8 @@
 package net.itchy.utils
 
+import java.lang.IllegalArgumentException
+import kotlin.math.E
+
 /**
  * Utility class for returning either one of two types.
  *
@@ -112,5 +115,13 @@ class Either<A: Any, B: Any> private constructor(
         fun <A: Any, B: Any> right(right: B): Either<A, B> {
             return Either(null, right)
         }
+    }
+}
+
+inline fun <reified A: Any, reified B: Any> Either(value: Any): Either<A, B> {
+    return when (value) {
+        is A -> Either.left(value)
+        is B -> Either.right(value)
+        else -> throw IllegalArgumentException()
     }
 }

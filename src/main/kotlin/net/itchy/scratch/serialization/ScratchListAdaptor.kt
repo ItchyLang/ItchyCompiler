@@ -11,7 +11,7 @@ class ScratchListAdaptor : JsonSerializer<ScratchList>
 {
     override fun serialize(src: ScratchList, typeOfSrc: Type, context: JsonSerializationContext): JsonElement
     {
-        var ret = JsonArray()
+        val ret = JsonArray()
         ret.add(src.name)
         ret.add(context.serialize(src.value))
         return ret

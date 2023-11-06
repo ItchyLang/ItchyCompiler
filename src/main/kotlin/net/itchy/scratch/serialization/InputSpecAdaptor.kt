@@ -11,7 +11,7 @@ class InputSpecAdaptor : JsonSerializer<InputSpec>
 {
     override fun serialize(src: InputSpec, typeOfSrc: Type, context: JsonSerializationContext): JsonElement
     {
-        var ret = JsonArray()
+        val ret = JsonArray()
         ret.add(src.inputType)
         ret.add(context.serialize(src.value))
         src.id?.let { ret.add(it) }
