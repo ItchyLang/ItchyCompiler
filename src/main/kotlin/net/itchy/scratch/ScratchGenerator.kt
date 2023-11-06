@@ -662,6 +662,7 @@ class ScratchGenerator: ExpressionVisitor<Input>, StatementVisitor<Unit> {
         block.parent = lastBlock?.id
         if (lastBlock != null) {
             lastBlockMod?.invoke(block.id)
+            lastBlockMod = null
             lastBlock.next = block.id
         }
         this.lastBlock = block

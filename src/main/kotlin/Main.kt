@@ -4,30 +4,20 @@ import net.itchy.utils.compileAndBundleFile
 fun main()
 {
     compileAndBundle("test", """
-    sprite X {
-        func invert(should: boolean) {
-            return !should
-        }
-        
-        func sayy(what: string) {
-            say(what)
-        }
-        
-        when init {
-            load_costume("c1", "abby-a.svg")
-            load_backdrop("b1", "backdrop.svg")
-        
-            if (invert(false)) {
-                sayy("Hello, world!")
-            }
-            
-            let x: double = 1
-            loop count 5 {
-                x += 1
-            }
-            
-            sayy(x)
-        }
+func factorial(n: double): double {
+    if (n <= 1) {
+        return 1
+    } 
+    return n * factorial(n - 1)
+}
+
+sprite X {
+    when init {
+        load_costume("c1", "abby-a.svg")
+        load_backdrop("b1", "backdrop.svg")
+
+        say(factorial(10))
     }
+}
     """.trimIndent(), ".")
 }
